@@ -43,7 +43,7 @@ type CreateAccountValues = z.infer<typeof createAccountSchema>
 const selectClassName =
 	"h-9 w-full rounded-full border-[0.5px] border-gray-80 bg-gray-90 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-80"
 
-export function CreateAccountForm({ userId }: { userId: string }) {
+export function CreateAccountForm({ userId, demo = false }: { userId: string; demo?: boolean }) {
 	const router = useRouter()
 	const [pending, startTransition] = useTransition()
 
@@ -160,8 +160,18 @@ export function CreateAccountForm({ userId }: { userId: string }) {
 					)}
 				/>
 
+				{demo && (
+					<p className="sm:col-span-2 text-xs text-gray-30">
+						Demo mode — accounts cannot be created here.
+					</p>
+				)}
+
 				<div className="sm:col-span-2 flex justify-end pt-2">
-					<button type="submit" disabled={pending} className="default-button">
+					<button
+						type="submit"
+						disabled={pending || demo}
+						className="default-button disabled:opacity-50 disabled:cursor-not-allowed"
+					>
 						{pending ? "Creating…" : "Open account"}
 					</button>
 				</div>
@@ -173,9 +183,11 @@ export function CreateAccountForm({ userId }: { userId: string }) {
 export function SetPrimaryButton({
 	userId,
 	accountId,
+	demo = false,
 }: {
 	userId: string
 	accountId: string
+	demo?: boolean
 }) {
 	const router = useRouter()
 	const [pending, startTransition] = useTransition()
@@ -201,8 +213,8 @@ export function SetPrimaryButton({
 		<button
 			type="button"
 			onClick={handleClick}
-			disabled={pending}
-			className="text-xs font-medium text-green-80 hover:text-green-70 transition-colors duration-300 disabled:opacity-50"
+			disabled={pending || demo}
+			className="text-xs font-medium text-green-80 hover:text-green-70 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
 		>
 			{pending ? "Updating…" : "Set as primary"}
 		</button>

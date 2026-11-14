@@ -54,6 +54,7 @@ interface SettingsFormsProps {
 	email: string
 	preference: Preference | null
 	sessions: Session[]
+	demo?: boolean
 }
 
 export default function SettingsForms({
@@ -63,6 +64,7 @@ export default function SettingsForms({
 	email,
 	preference,
 	sessions,
+	demo = false,
 }: SettingsFormsProps) {
 	const router = useRouter()
 	const [pending, startTransition] = useTransition()
@@ -158,6 +160,11 @@ export default function SettingsForms({
 
 	return (
 		<div className="space-y-8">
+			{demo && (
+				<p className="rounded-xl border-[0.5px] border-green-80/30 bg-green-80/5 px-6 py-4 text-xs text-gray-20">
+					Demo mode — these forms show sample values and cannot be saved.
+				</p>
+			)}
 			<section className="rounded-xl border-[0.5px] border-gray-70 bg-gray-90 p-6">
 				<div className="flex flex-col gap-1 pb-6">
 					<h2 className="text-lg font-semibold text-white">Profile</h2>
@@ -197,7 +204,11 @@ export default function SettingsForms({
 						</div>
 
 						<div className="sm:col-span-2 flex justify-end">
-							<button type="submit" disabled={pending} className="default-button">
+							<button
+								type="submit"
+								disabled={pending || demo}
+								className="default-button disabled:opacity-50 disabled:cursor-not-allowed"
+							>
 								{pending ? "Saving…" : "Save profile"}
 							</button>
 						</div>
@@ -281,7 +292,11 @@ export default function SettingsForms({
 						/>
 
 						<div className="sm:col-span-2 flex justify-end">
-							<button type="submit" disabled={pending} className="default-button">
+							<button
+								type="submit"
+								disabled={pending || demo}
+								className="default-button disabled:opacity-50 disabled:cursor-not-allowed"
+							>
 								{pending ? "Saving…" : "Save preferences"}
 							</button>
 						</div>
@@ -301,8 +316,8 @@ export default function SettingsForms({
 						<button
 							type="button"
 							onClick={endOtherSessions}
-							disabled={pending}
-							className="default-button-alt"
+							disabled={pending || demo}
+							className="default-button-alt disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							Sign out other sessions
 						</button>
@@ -330,8 +345,8 @@ export default function SettingsForms({
 								<button
 									type="button"
 									onClick={() => endSession(item.id)}
-									disabled={pending}
-									className="text-xs font-medium text-red-400 hover:text-red-300 transition-colors duration-300 disabled:opacity-50"
+									disabled={pending || demo}
+									className="text-xs font-medium text-red-400 hover:text-red-300 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
 								>
 									Sign out
 								</button>

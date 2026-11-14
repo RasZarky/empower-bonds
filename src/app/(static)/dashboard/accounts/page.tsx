@@ -1,10 +1,11 @@
-import { headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
+import { getDashboardViewer } from "@/lib/dashboard-session"
 import {
 	getBankAccountsWithBalanceAction,
 	getUserProfileDataAction,
 } from "@/server/action/userAction"
+import { DEMO_ACCOUNTS, DEMO_PREFERENCE } from "@/lib/demo"
+import type { BankAccount } from "@/types/db"
 import { formatCurrency, formatDate, maskAccountNumber } from "@/lib/format"
 import { CreateAccountForm, SetPrimaryButton } from "@/components/dashboard/AccountControls"
 
@@ -17,21 +18,27 @@ const statusStyles: Record<string, string> = {
 }
 
 export default async function AccountsPage() {
-	const session = await auth.api.getSession({ headers: await headers() })
+	const viewer = await getDashboardViewer()
 
-	if (!session) {
+	if (!viewer) {
 		redirect("/auth/login?redirect=/dashboard/accounts")
 	}
 
-	const userId = session.user.id
+	let accounts: BankAccount[]
+	let hideBalances: boolean
 
-	const [profileResult, accountsResult] = await Promise.all([
-		getUserProfileDataAction(userId),
-		getBankAccountsWithBalanceAction(userId),
-	])
+	if (viewer.demo) {
+		accounts = DEMO_ACCOUNTS
+		hideBalances = DEMO_PREFERENCE.hideBalances
+	} else {
+		const [profileResult, accountsResult] = await Promise.all([
+			getUserProfileDataAction(viewer.userId),
+			getBankAccountsWithBalanceAction(viewer.userId),
+		])
 
-	const accounts = accountsResult.data ?? []
-	const hideBalances = profileResult.data?.preferences?.hideBalances ?? false
+		accounts = accountsResult.data ?? []
+		hideBalances = profileResult.data?.preferences?.hideBalances ?? false
+	}
 
 	return (
 		<>
@@ -110,7 +117,11 @@ export default async function AccountsPage() {
 												Primary
 											</span>
 										) : (
-											<SetPrimaryButton userId={userId} accountId={account.id} />
+											<SetPrimaryButton
+												userId={viewer.userId}
+												accountId={account.id}
+												demo={viewer.demo}
+											/>
 										)}
 									</div>
 								</article>
@@ -127,7 +138,7 @@ export default async function AccountsPage() {
 						A unique account number is generated for you automatically.
 					</p>
 				</div>
-				<CreateAccountForm userId={userId} />
+				<CreateAccountForm userId={viewer.userId} demo={viewer.demo} />
 			</section>
 		</>
 	)

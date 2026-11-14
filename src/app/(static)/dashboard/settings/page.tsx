@@ -1,23 +1,39 @@
-import { headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
+import { getDashboardViewer } from "@/lib/dashboard-session"
 import { getUserProfileDataAction } from "@/server/action/userAction"
 import { getActiveSessionsAction } from "@/server/action/settingsAction"
+import { DEMO_PREFERENCE, DEMO_SESSIONS, DEMO_USER } from "@/lib/demo"
+import type { Preference, Session } from "@/types/db"
 import SettingsForms from "@/components/dashboard/SettingsForms"
 
 export default async function SettingsPage() {
-	const session = await auth.api.getSession({ headers: await headers() })
+	const viewer = await getDashboardViewer()
 
-	if (!session) {
+	if (!viewer) {
 		redirect("/auth/login?redirect=/dashboard/settings")
 	}
 
-	const userId = session.user.id
+	let name: string
+	let email: string
+	let preference: Preference | null
+	let sessions: Session[]
 
-	const [profileResult, sessionsResult] = await Promise.all([
-		getUserProfileDataAction(userId),
-		getActiveSessionsAction(userId, session.session.id),
-	])
+	if (viewer.demo) {
+		name = DEMO_USER.name
+		email = DEMO_USER.email
+		preference = DEMO_PREFERENCE
+		sessions = DEMO_SESSIONS
+	} else {
+		const [profileResult, sessionsResult] = await Promise.all([
+			getUserProfileDataAction(viewer.userId),
+			getActiveSessionsAction(viewer.userId, viewer.sessionId),
+		])
+
+		name = profileResult.data?.name || viewer.name || ""
+		email = profileResult.data?.email || viewer.email
+		preference = profileResult.data?.preferences ?? null
+		sessions = sessionsResult.data ?? []
+	}
 
 	return (
 		<>
@@ -32,12 +48,13 @@ export default async function SettingsPage() {
 			</header>
 
 			<SettingsForms
-				userId={userId}
-				currentSessionId={session.session.id}
-				name={profileResult.data?.name || session.user.name || ""}
-				email={profileResult.data?.email || session.user.email}
-				preference={profileResult.data?.preferences ?? null}
-				sessions={sessionsResult.data ?? []}
+				userId={viewer.userId}
+				currentSessionId={viewer.demo ? "" : viewer.sessionId}
+				name={name}
+				email={email}
+				preference={preference}
+				sessions={sessions}
+				demo={viewer.demo}
 			/>
 		</>
 	)

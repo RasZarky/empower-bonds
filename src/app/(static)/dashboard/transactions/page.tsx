@@ -1,9 +1,9 @@
 import Link from "next/link"
-import { headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
+import { getDashboardViewer } from "@/lib/dashboard-session"
 import { getTransactionsAction } from "@/server/action/transactionAction"
-import type { TransactionStatusEnum, TransactionTypeEnum } from "@/types/db"
+import { filterDemoTransactions } from "@/lib/demo"
+import type { Transaction, TransactionStatusEnum, TransactionTypeEnum } from "@/types/db"
 import { formatCurrency, formatDateTime } from "@/lib/format"
 
 const transactionTypes = [
@@ -46,9 +46,9 @@ export default async function TransactionsPage({
 }: {
 	searchParams: SearchParams
 }) {
-	const session = await auth.api.getSession({ headers: await headers() })
+	const viewer = await getDashboardViewer()
 
-	if (!session) {
+	if (!viewer) {
 		redirect("/auth/login?redirect=/dashboard/transactions")
 	}
 
@@ -64,16 +64,30 @@ export default async function TransactionsPage({
 		: undefined
 	const search = params.q?.trim() || undefined
 
-	const result = await getTransactionsAction(
-		session.user.id,
-		{ type, status, search },
-		params.cursor,
-		10
-	)
+	let transactions: Transaction[]
+	let hasNextPage = false
+	let nextCursor: string | Date | number | null = null
+	let loadError: string | undefined
 
-	const transactions = result.data?.data ?? []
-	const nextCursor = result.data?.nextCursor ?? null
-	const hasNextPage = result.data?.hasNextPage ?? false
+	if (viewer.demo) {
+		transactions = filterDemoTransactions({ type, status, search })
+	} else {
+		const result = await getTransactionsAction(
+			viewer.userId,
+			{ type, status, search },
+			params.cursor,
+			10
+		)
+
+		if (result.success === false) {
+			loadError = result.error || "Could not load transactions."
+			transactions = []
+		} else {
+			transactions = result.data?.data ?? []
+			nextCursor = result.data?.nextCursor ?? null
+			hasNextPage = result.data?.hasNextPage ?? false
+		}
+	}
 
 	const pageParams = new URLSearchParams()
 	if (type) pageParams.set("type", type)
@@ -147,10 +161,8 @@ export default async function TransactionsPage({
 			</form>
 
 			<section className="rounded-xl border-[0.5px] border-gray-70 bg-gray-90 overflow-hidden">
-				{result.success === false ? (
-					<p className="p-6 text-sm text-red-400">
-						{result.error || "Could not load transactions."}
-					</p>
+				{loadError ? (
+					<p className="p-6 text-sm text-red-400">{loadError}</p>
 				) : transactions.length === 0 ? (
 					<p className="p-6 text-sm text-gray-20">
 						{hasFilters

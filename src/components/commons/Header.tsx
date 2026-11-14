@@ -158,8 +158,8 @@ const Header: React.FC<HeaderProps> = ({ session, demo = false }) => {
 				{/* Authentication/Profile Controls */}
 				<AuthControls
 					session={session}
-					// @ts-expect-error not null assertion
 					demo={demo}
+					// @ts-expect-error not null assertion
 					profileMenuRef={profileMenuRef}
 					isProfileMenuOpen={isProfileMenuOpen}
 					setIsProfileMenuOpen={setIsProfileMenuOpen}

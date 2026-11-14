@@ -1,13 +1,14 @@
 import Link from "next/link"
-import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { RiArrowRightLine, RiBankCardLine, RiExchangeDollarLine, RiTimeLine } from "react-icons/ri"
-import { auth } from "@/lib/auth"
+import { getDashboardViewer } from "@/lib/dashboard-session"
 import {
 	getBankAccountsWithBalanceAction,
 	getUserProfileDataAction,
 } from "@/server/action/userAction"
 import { getTransactionsAction } from "@/server/action/transactionAction"
+import { DEMO_ACCOUNTS, DEMO_PREFERENCE, DEMO_SESSIONS, DEMO_TRANSACTIONS, DEMO_USER } from "@/lib/demo"
+import type { BankAccount, Transaction } from "@/types/db"
 import { formatCurrency, formatDate, maskAccountNumber } from "@/lib/format"
 import StatCard from "@/components/dashboard/StatCard"
 
@@ -20,24 +21,37 @@ const statusStyles: Record<string, string> = {
 }
 
 export default async function DashboardOverviewPage() {
-	const session = await auth.api.getSession({ headers: await headers() })
+	const viewer = await getDashboardViewer()
 
-	if (!session) {
+	if (!viewer) {
 		redirect("/auth/login?redirect=/dashboard")
 	}
 
-	const userId = session.user.id
+	let accounts: BankAccount[]
+	let transactions: Transaction[]
+	let hideBalances: boolean
+	let createdAt: Date | null
+	let lastLogin: Date | null
 
-	const [profileResult, accountsResult, transactionsResult] = await Promise.all([
-		getUserProfileDataAction(userId),
-		getBankAccountsWithBalanceAction(userId),
-		getTransactionsAction(userId, undefined, undefined, 5),
-	])
+	if (viewer.demo) {
+		accounts = DEMO_ACCOUNTS
+		transactions = DEMO_TRANSACTIONS.slice(0, 5)
+		hideBalances = DEMO_PREFERENCE.hideBalances
+		createdAt = DEMO_USER.createdAt
+		lastLogin = DEMO_SESSIONS[0]?.createdAt ?? null
+	} else {
+		const [profileResult, accountsResult, transactionsResult] = await Promise.all([
+			getUserProfileDataAction(viewer.userId),
+			getBankAccountsWithBalanceAction(viewer.userId),
+			getTransactionsAction(viewer.userId, undefined, undefined, 5),
+		])
 
-	const profile = profileResult.data
-	const accounts = accountsResult.data ?? []
-	const transactions = transactionsResult.data?.data ?? []
-	const hideBalances = profile?.preferences?.hideBalances ?? false
+		accounts = accountsResult.data ?? []
+		transactions = transactionsResult.data?.data ?? []
+		hideBalances = profileResult.data?.preferences?.hideBalances ?? false
+		createdAt = profileResult.data?.createdAt ?? null
+		lastLogin = profileResult.data?.lastLogin ?? null
+	}
 
 	const primaryAccount = accounts.find((account) => account.isPrimary) ?? accounts[0]
 	const primaryCurrency = primaryAccount?.currency ?? "USD"
@@ -48,7 +62,7 @@ export default async function DashboardOverviewPage() {
 			return total + (Number.isFinite(amount) ? amount : 0)
 		}, 0)
 
-	const firstName = session.user.name?.split(" ")[0] || "there"
+	const firstName = viewer.name?.split(" ")[0] || "there"
 
 	return (
 		<>
@@ -79,13 +93,13 @@ export default async function DashboardOverviewPage() {
 				/>
 				<StatCard
 					label="Last login"
-					value={formatDate(profile?.lastLogin)}
+					value={formatDate(lastLogin)}
 					hint="Most recent session"
 					icon={<RiTimeLine className="h-5 w-5" />}
 				/>
 				<StatCard
 					label="Member since"
-					value={formatDate(profile?.createdAt ?? session.user.createdAt)}
+					value={formatDate(createdAt)}
 					hint="Thank you for banking with us"
 					icon={<RiExchangeDollarLine className="h-5 w-5" />}
 				/>
