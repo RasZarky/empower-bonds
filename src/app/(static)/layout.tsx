@@ -6,7 +6,8 @@ import { createMetadata } from "@/lib/metadata"
 import { Toaster } from "sonner"
 import Footer from "@/components/commons/Footer"
 import { auth } from "@/lib/auth"
-import { headers } from "next/headers"
+import { cookies, headers } from "next/headers"
+import { DEMO_COOKIE } from "@/lib/demo-cookie"
 import Header from "@/components/commons/Header"
 
 const geistSans = Geist({
@@ -42,16 +43,20 @@ export default async function RootLayout({
 }: Readonly<{
 	children: React.ReactNode
 }>) {
-	const session = await auth.api.getSession({
-		headers: await headers(),
-	})
+	const isDemo = (await cookies()).get(DEMO_COOKIE)?.value === "1"
+
+	const session = isDemo
+		? null
+		: await auth.api.getSession({
+				headers: await headers(),
+		  })
 
 	return (
 		<html lang="en">
 			<body
 				className={`relative ${geistSans.variable} ${geistMono.variable} ${lexend.variable} antialiased text-gray-20 font-medium`}
 			>
-				<Header session={session} />
+				<Header session={session} demo={isDemo} />
 
 				<main className="px-6 space-y-16 flex flex-col w-screen">
 					{children}

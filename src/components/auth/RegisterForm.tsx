@@ -75,7 +75,7 @@ function FormComponent() {
 				description:
 					"You have successfully registered a new account with us!",
 			})
-			router.push("/auth/login") // Redirect to login page
+			router.push("/auth/account-ready") // Holding page while the account is prepared
 		}
 	}
 
@@ -101,10 +101,10 @@ function FormComponent() {
 
 							// Simulate registration success
 							toast.success("Registered Successfully", {
-								description: `A verificatoin email has been sent to your email: ${data.email}!`,
-							})
+																	description: `A verification email has been sent to your email: ${data.email}!`,
+								})
 
-							router.push("/auth/login") // Redirect to login page
+							router.push("/auth/account-ready") // Holding page while the account is prepared
 						},
 						onError(context) {
 							setUser(null) // Clear user state on error

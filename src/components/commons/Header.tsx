@@ -22,6 +22,7 @@ import { TbLogin2, TbMenu3 } from "react-icons/tb"
 import Logo from "./Logo"
 import { Session } from "@/types/auth"
 import { authClient } from "@/lib/auth-client"
+import { endDemoSession } from "@/server/action/demoAction"
 import { useClickOutside } from "@/hooks/useClickOutside"
 import { Separator } from "../ui/separator"
 
@@ -44,6 +45,7 @@ const redirect_link = "/auth/login" // Redirect link after logout
 // Header component props
 interface HeaderProps {
 	session: Session | null
+	demo?: boolean
 }
 
 interface CursorPosition {
@@ -56,7 +58,7 @@ interface CursorPosition {
  * Header component with responsive navigation, scroll-based behavior,
  * and user authentication controls.
  */
-const Header: React.FC<HeaderProps> = ({ session }) => {
+const Header: React.FC<HeaderProps> = ({ session, demo = false }) => {
 	const { scrollY } = useScroll()
 	const pathname = usePathname()
 	const router = useRouter()
@@ -157,6 +159,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
 				<AuthControls
 					session={session}
 					// @ts-expect-error not null assertion
+					demo={demo}
 					profileMenuRef={profileMenuRef}
 					isProfileMenuOpen={isProfileMenuOpen}
 					setIsProfileMenuOpen={setIsProfileMenuOpen}
@@ -176,6 +179,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
 				navLinks={navLinks}
 				pathname={pathname}
 				session={session}
+				demo={demo}
 				handleLogout={handleLogout}
 			/>
 		</motion.header>
@@ -331,12 +335,14 @@ const DesktopNavigation: React.FC<{
 // Authentication controls component
 const AuthControls: React.FC<{
 	session: Session | null
+	demo: boolean
 	profileMenuRef: React.RefObject<HTMLDivElement>
 	isProfileMenuOpen: boolean
 	setIsProfileMenuOpen: React.Dispatch<React.SetStateAction<boolean>>
 	handleLogout: () => void
 }> = ({
 	session,
+	demo,
 	profileMenuRef,
 	isProfileMenuOpen,
 	setIsProfileMenuOpen,
@@ -373,7 +379,7 @@ const AuthControls: React.FC<{
 							Dashboard
 						</Link>
 						<Link
-							href="/settings"
+							href="/dashboard/settings"
 							onClick={() => setIsProfileMenuOpen(false)}
 							className="flex items-center px-4 py-2 text-white hover:bg-[#333] transition-colors duration-200"
 						>
@@ -390,6 +396,20 @@ const AuthControls: React.FC<{
 						</button>
 					</motion.div>
 				)}
+			</div>
+		) : demo ? (
+			<div className="flex items-center gap-3">
+				<span className="rounded-full border-[0.5px] border-green-80/40 px-3 py-1 text-xs text-green-80">
+					Demo mode
+				</span>
+				<form action={endDemoSession}>
+					<button
+						type="submit"
+						className="text-white hover:text-green-80 transition-colors duration-300 cursor-pointer"
+					>
+						Exit demo
+					</button>
+				</form>
 			</div>
 		) : (
 			<>
@@ -433,6 +453,7 @@ const MobileMenu: React.FC<{
 	navLinks: NavLink[]
 	pathname: string
 	session: Session | null
+	demo: boolean
 	handleLogout: () => void
 }> = ({
 	mobileMenuRef,
@@ -441,6 +462,7 @@ const MobileMenu: React.FC<{
 	navLinks,
 	pathname,
 	session,
+	demo,
 	handleLogout,
 }) => (
 	<motion.div
@@ -494,7 +516,7 @@ const MobileMenu: React.FC<{
 							Dashboard
 						</Link>
 						<Link
-							href="/settings"
+							href="/dashboard/settings"
 							onClick={() => setIsMobileMenuOpen(false)}
 							className="flex items-center text-white hover:text-green-80 transition-colors duration-300"
 						>
@@ -513,6 +535,16 @@ const MobileMenu: React.FC<{
 							Logout
 						</button>
 					</>
+				) : demo ? (
+					<form action={endDemoSession}>
+						<button
+							type="submit"
+							className="flex items-center text-green-80 hover:text-green-70 transition-colors duration-300"
+						>
+							<RiLogoutBoxLine className="mr-2 h-4 w-4" />
+							Exit demo
+						</button>
+					</form>
 				) : (
 					<>
 						<Link

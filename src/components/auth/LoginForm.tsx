@@ -23,6 +23,7 @@ import { useZustand } from "@/hooks/useZustand"
 import { FaEye, FaEyeSlash } from "react-icons/fa6"
 import Link from "next/link"
 import { Checkbox } from "../ui/checkbox"
+import { startDemoSession } from "@/server/action/demoAction"
 
 export const LoginSchema = z.object({
 	email: z.email({ message: "Invalid email address" }),
@@ -233,12 +234,35 @@ function FormComponent() {
 	)
 }
 
+function DemoEntry() {
+	return (
+		<div className="mt-8 flex flex-col items-center gap-3 border-t border-gray-70 pt-6">
+			<p className="text-center text-xs text-gray-30">
+				Just exploring? Open the dashboard with sample data — no account required.
+			</p>
+			<form action={startDemoSession} className="flex w-full justify-center">
+				<button
+					type="submit"
+					className="default-button-alt w-full max-w-[260px] text-white"
+				>
+					View demo dashboard
+				</button>
+			</form>
+		</div>
+	)
+}
+
 export default function LoginForm() {
 	return (
 		<FormSection
 			title="Login"
 			description="Welcome back. Please login to access your account."
-			form={<FormComponent />}
+			form={
+				<>
+					<FormComponent />
+					<DemoEntry />
+				</>
+			}
 		/>
 	)
 }

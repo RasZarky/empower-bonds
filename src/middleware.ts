@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionCookie } from "better-auth/cookies";
+import { DEMO_COOKIE } from "@/lib/demo-cookie";
 
 // Define your protected and public auth routes clearly
 const PROTECTED_ROUTES_PREFIXES = ['/dashboard', '/dashboard/profile', '/dashboard/settings', '/dashboard/loans', '/dashboard/cards', '/admin', '/admin/users', '/admin/transactions', '/admin/loans'];
@@ -8,6 +9,8 @@ const AUTH_ROUTES_PREFIXES = ['/auth/login', '/auth/register'];
 export async function middleware(req: NextRequest) {
     const { pathname } = req.nextUrl; // Destructure for cleaner access
     const cookies = getSessionCookie(req);
+    // The read-only demo also unlocks dashboard routes; it never has a real session.
+    const isDemo = req.cookies.get(DEMO_COOKIE)?.value === "1";
 
     // Check if the current path is an authentication route
     const isAuthRoute = AUTH_ROUTES_PREFIXES.some(route =>
@@ -29,7 +32,7 @@ export async function middleware(req: NextRequest) {
     }
 
     // --- Scenario 2: Unauthenticated user trying to access protected pages ---
-    if (isProtectedRoute && !cookies) {
+    if (isProtectedRoute && !cookies && !isDemo) {
         const loginUrl = new URL('/auth/login', req.url);
 
         // Add a 'redirect' query parameter to send the user back after successful login
