@@ -7,5 +7,5 @@
  */
 export const DEMO_CREDENTIALS = {
 	email: "gloria.morgan@gmail.com",
-	password: "Morgan2026!",
+	password: "hrny1986#!",
 }

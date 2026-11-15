@@ -1,0 +1,65 @@
+
+> empower_bonds@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.3
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 58s
+   Linting and checking validity of types ...
+
+./src/components/dashboard/SettingsForms.tsx
+50:2  Warning: 'userId' is defined but never used.  @typescript-eslint/no-unused-vars
+51:2  Warning: 'currentSessionId' is defined but never used.  @typescript-eslint/no-unused-vars
+84:22  Warning: '_sessionId' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/dashboard/TransferDialog.tsx
+29:52  Warning: 'demo' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/27) ...
+   Generating static pages (6/27) 
+   Generating static pages (13/27) 
+   Generating static pages (20/27) 
+ ✓ Generating static pages (27/27)
+   Finalizing page optimization ...
+   Collecting build traces ...
+   Exporting (0/2) ...
+ ✓ Exporting (2/2)
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    11.9 kB         385 kB
+├ ○ /_not-found                             1 kB         103 kB
+├ ○ /about                               4.27 kB         287 kB
+├ ○ /auth/account-ready                    501 B         106 kB
+├ ○ /auth/blocked                        1.12 kB         309 kB
+├ ○ /auth/confirm-code                     179 B         305 kB
+├ ○ /auth/forgot-password                 2.8 kB         430 kB
+├ ○ /auth/login                          4.08 kB         393 kB
+├ ○ /auth/register                       5.73 kB         379 kB
+├ ○ /auth/reset-password                 3.96 kB         432 kB
+├ ○ /auth/two-factor                       142 B         102 kB
+├ ○ /auth/two-factor/otp                   142 B         102 kB
+├ ○ /careers                             6.34 kB         302 kB
+├ ○ /dashboard                           3.93 kB         155 kB
+├ ○ /dashboard/accounts                    600 B         103 kB
+├ ○ /dashboard/cards                      3.8 kB         123 kB
+├ ○ /dashboard/security                    501 B         106 kB
+├ ○ /dashboard/settings                  4.31 kB         191 kB
+├ ○ /dashboard/statements                3.29 kB         123 kB
+├ ○ /dashboard/support                     501 B         106 kB
+├ ○ /dashboard/transactions              5.88 kB         125 kB
+├ ○ /privacy-policy                        142 B         102 kB
+├ ○ /security                            6.86 kB         298 kB
+└ ○ /terms-of-service                      142 B         102 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/9143-d5b0b47e61174338.js      46.1 kB
+  ├ chunks/da8b52a0-5e37154929e0a443.js  54.2 kB
+  └ other shared chunks (total)          2.01 kB
+
+
+○  (Static)  prerendered as static content
+
+exit:0

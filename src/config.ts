@@ -13,7 +13,9 @@ const config = {
     BASE_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:6000',
     FROM_EMAIL: process.env.FROM_EMAIL || "Empower Bonds <delivery@resend.dev>",
     TRUSTED_ORIGINS: process.env.TRUSTED_ORIGINS ? process.env.TRUSTED_ORIGINS?.split(",") : ["http://localhost:3000", "http://127.0.0.1:3000", "https://empowerbonds.online", "https://empowerbonds.site"],
-    RESEND_API_KEY: process.env.RESEND_API_KEY || "re_TAchGk8E_HUYcMQkUjJt1sZMpiTgfLvwj",
+    // Never hard-code this: the config object is imported by client components,
+    // so any literal value here would ship in the public JS bundle.
+    RESEND_API_KEY: process.env.RESEND_API_KEY || "",
     // NEXT_PUBLIC_TITLE comes first because only public variables reach client components.
     TITLE: process.env.NEXT_PUBLIC_TITLE || process.env.TITLE || "Empower Bonds",
     CLOUDINARY_NAME: process.env.NEXT_PUBLIC_CLOUDINARY_NAME || "",

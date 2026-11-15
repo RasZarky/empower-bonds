@@ -1,236 +1,164 @@
 # Empower Bonds
 
-Welcome to **Empower Bonds**, an open-source Next.js banking website template designed to provide a secure, modern banking experience. Built with better-auth for robust authentication, Redis for session management, and Shadcn UI for a sleek, customizable interface, this project is free for use by the open-source community or anyone looking to build a banking solution.
+A banking website UI built with Next.js and exported as a **static site**. The full marketing site and a complete sample dashboard (accounts, transactions, cards, statements, security, settings, support) are prerendered to plain HTML/CSS/JS in `out/` and can be served by any static host — Firebase Hosting on the free Spark plan is the intended target.
 
-## Overview
+There is no server runtime, no API routes, no database and no real authentication in this build. Everything the dashboard shows comes from local demo data.
 
-Empower Bonds integrates real-time financial data and secure user management, inspired by the dark-themed Figma design by [Pragadesh](mailto:pragadesh37v@gmail.com) ([Figma File](https://www.figma.com/community/file/1298887728670431393/banking-company-website-ui-template-design-in-dark-theme-free-editable)). It offers essential banking features with plans for a future dashboard.
+## What works
 
-### Key Features
+- **Marketing pages** — home, about, careers, security, privacy policy, terms of service.
+- **Sample dashboard** — overview, accounts, transactions (client-side search/filter), cards, statements, security, settings, support, all backed by local demo data for the account holder *Gloria Morgan* (total balance `$2,584,913.27`, 12-month cash-flow chart).
+- **Demo sign-in** — the form accepts the sample credentials below and opens `/dashboard`. Anything else shows an authentication error.
+- **Sign up** — goes to the "Getting your account ready" holding page.
+- **Loading states** — the dashboard shows a skeleton for ~900 ms per route, sign-in for ~1.2 s, sign-up for ~1.4 s, so the demo feels like a real application.
+- **Local interactions** — card freeze, notification read state, settings and account controls update in the browser only; the currency converter uses fixed sample rates; transfers always reject the secret code with "Wrong password".
 
-- **Currency Converter**:
-  - Crypto <-> Currency conversion
-- **Authentication**:
-  - Registration
-  - Login
-  - Password Reset
-  - Forgot Password
-  - Email Verification
-  - Blocked Account Handling
-- **Pages**:
-  - Home
-  - About
-  - Career
-  - Security
-  - Authentication Pages (Registration, Blocked Account, Password Reset, Forgot Password, Login, Email Verification)
-- **Technologies**:
-  - **Next.js**: Server-side rendering and routing.
-  - **better-auth**: Secure authentication with token management.
-  - **Redis**: Session storage and caching.
-  - **Shadcn UI**: Customizable, accessible UI components.
-- **Future Plans**: Integration of a user dashboard for account management, transactions, and settings.
+Intentionally unavailable: real authentication, database-backed accounts, emails, payments, live exchange rates.
 
-### Design Credits
+## Tech stack
 
-This project is based on the Figma design by Pragadesh, available in the community: [Banking Company Website UI Template](https://www.figma.com/community/file/1298887728670431393/banking-company-website-ui-template-design-in-dark-theme-free-editable). For inquiries, contact Pragadesh at [pragadesh37v@gmail.com](mailto:pragadesh37v@gmail.com).
+Next.js 15.5 (App Router, static export) · React 19 · TypeScript · Tailwind CSS 4 · shadcn/ui components · react-hook-form + Zod · Framer Motion · sonner toasts.
 
-## Getting Started
+## Demo sign-in
+
+| Field    | Value                     |
+| -------- | ------------------------- |
+| Email    | `gloria.morgan@gmail.com`  |
+| Password | `hrny1986#!`              |
+
+The values live in `src/lib/demo-credentials.ts` and are public demo values — change or remove them before using this project for real accounts. Because the site is a static export, a credential change requires a rebuild and redeploy before visitors see it. The form starts empty; it is not pre-filled.
+
+## Getting started
 
 ### Prerequisites
 
-- Node.js (v20.x or later)
-- npm or pnpm
-- Redis server (local or cloud instance)
-- PostgreSQL database (local or cloud instance)
-- Resend API (Sending transactional emails)
+- Node.js `22.13.1` (see `engines` in `package.json`)
+- npm (bundled with Node) — pnpm is optional
 
-### Installation
+No database, Redis instance or email provider is required for the demo build.
 
-1. Clone the repository:
-
-    ```sh
-    git clone https://github.com/david-jerry/empower-bond-free-template.git
-    cd empower-bonds
-    ```
-
-2. Install dependencies:
-
-    ```sh
-    npm install
-    # or
-    pnpm install
-    ```
-
-3. Set up environment variables:
-    - Copy `.env.example` to `.env.local`:
-
-        ```sh
-        cp .env.example .env.local
-        ```
-
-    - Edit `.env.local` with your credentials and API keys (see `.env.example` for details).
-
-4. Migrate Drizzle DB
-
-    ```sh
-    npm run push
-    # or
-    pnpm push
-    ```
-
-5. Start the development server:
-
-    ```sh
-    npm run dev
-    # or
-    pnpm dev
-    ```
-
-    Open [http://localhost:3000](http://localhost:3000) to view the app.
-
-## Deploying to Firebase Hosting
-
-This project builds as a **static export**: `next.config.ts` sets `output: "export"`, so `next build` writes plain HTML, CSS, JS and assets to `out/`, and `firebase.json` publishes that folder from Firebase Hosting. The deployed site is the demo UI only — there is no server runtime, no API routes and no database connection. It works on the free Spark plan.
-
-What works on the deployed site:
-
-- Every marketing page (home, about, careers, security, privacy policy, terms of service).
-- The sample dashboard under `/dashboard` (accounts, transactions, cards, statements, security, settings, support) using the local demo ledger for Gloria Morgan.
-- Login accepts `gloria.morgan@gmail.com` / `Morgan2026!` and opens the dashboard in the browser; any other credentials show an authentication error.
-- Sign Up goes to the "Getting your account ready" holding page.
-- The currency converter uses fixed sample rates instead of a live API.
-
-What is intentionally unavailable: real authentication, database-backed accounts, emails, and transfers (the secret code always returns "Wrong password").
-
-### 1. Build the static site
+### Install
 
 ```sh
-pnpm build
-# or: npm run build
+# respects pnpm-lock.yaml without a global pnpm install
+npx pnpm@10.18.1 install
+
+# or, using the npm that ships with Node
+npm install
 ```
 
-The build must succeed with no server running; the output is written to `out/`.
+### Develop
 
-### 2. Preview it locally
+```sh
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). To use another port, pass it through: `npm run dev -- -p 65040`.
+
+### Build the static site
+
+```sh
+npm run build
+```
+
+`next.config.ts` sets `output: "export"`, so the build writes static files to `out/`. No server needs to be running, and every route in the build output is marked `○ (Static)`.
+
+Note: building clears `.next`, which breaks a running dev server — restart `npm run dev` after a build.
+
+### Preview the exported site exactly as a static host serves it
 
 ```sh
 npx serve out
-# or, with the Firebase emulator:
-npx firebase-tools emulators:start --only hosting
 ```
 
-Open the URL it prints and check `/` and `/dashboard/` (the dashboard is a prerendered page — no sign-in cookie is required).
+## Deploying to Firebase Hosting
 
-### 3. Deploy
+`firebase.json` contains a single `hosting` block that publishes `out/`, with `cleanUrls` and `trailingSlash` enabled and no functions, rewrites or App Hosting backend.
 
 ```sh
+npm run build
+
 npm install -g firebase-tools   # once
 firebase login
 firebase use --add              # pick your Firebase project
 firebase deploy --only hosting
-# or the package script (uses npx firebase-tools):
-pnpm deploy
+
+# or, using the package script (runs `npx firebase-tools`):
+npm run deploy
 ```
 
-`firebase.json` publishes `out/` with `cleanUrls` and `trailingSlash`, so `/dashboard/`, `/auth/login/` and the rest resolve to their prerendered `index.html` files. Firebase serves `out/404.html` for unknown paths.
+- `/dashboard/`, `/auth/login/` and the other routes resolve to their prerendered `index.html` files; unknown paths are served from `out/404.html`.
+- A custom domain is added in the Firebase console under **Hosting → Add custom domain**; no rebuild is needed because the site is fully static.
+- If you later want the real backend (auth, Postgres, Redis, emails), remove `output: "export"` and deploy to Firebase App Hosting or another Node host instead.
 
-### 4. Custom domain (optional)
+## Project structure
 
-Firebase console → **Hosting → Add custom domain**, then follow the DNS instructions. No rebuild is needed because the site is fully static.
+```txt
+empower-bond/
+├── src/
+│   ├── app/
+│   │   ├── globals.css                  # Tailwind CSS 4 setup and design tokens
+│   │   ├── favicon.ico
+│   │   └── (static)/                    # Every route; all prerendered
+│   │       ├── layout.tsx               # Shared header/footer shell
+│   │       ├── page.tsx                 # Home
+│   │       ├── robots.tsx, sitemaps.tsx # SEO
+│   │       ├── about/, careers/, security/
+│   │       ├── privacy-policy/, terms-of-service/
+│   │       ├── auth/                    # login, register, forgot/reset password,
+│   │       │                            #   confirm-code, two-factor, blocked
+│   │       └── dashboard/               # layout, loading, overview, accounts,
+│   │                                    #   transactions, cards, statements,
+│   │                                    #   security, settings, support
+│   ├── components/                      # Page sections, dashboard widgets, forms, ui/
+│   ├── lib/
+│   │   ├── demo.ts                      # Demo accounts, transactions, cards, statements
+│   │   ├── demo-credentials.ts          # Sign-in credentials for the demo
+│   │   ├── dashboard-session.ts         # DEMO_VIEWER used by dashboard pages
+│   │   └── ...                          # formatting, cards, statements, shared utils
+│   ├── hooks/, types/, config.ts
+│   ├── db/, server/                     # Retained from the original backend; unused by
+│   │                                    #   the static export and never imported by it
+├── public/                              # Static assets
+├── out/                                 # Generated by `npm run build` (deploy this)
+├── next.config.ts                       # output: "export", unoptimized images
+├── firebase.json                        # Hosting config for out/
+└── package.json
+```
 
-### Notes
+`src/config.ts` is imported by several client components (logo, footer, banner, hero), so the whole config object is included in the public JavaScript bundle. Never hard-code secrets there — read them from `process.env` only.
 
-- `firebase.json` only contains a `hosting` block. There is no App Hosting backend and no Cloud Functions.
-- If you later want the real backend (auth, Postgres, Redis, emails), revert `output: "export"` and deploy with Firebase App Hosting or another Node host.
+## Environment variables
 
-## Configuration
+The demo build works without any of these. They are documented for reference in case the original backend is restored (`src/db`, `src/server`); `.env.example` lists the template's variables.
 
-Empower Bonds relies on environment variables for configuration. Below are the core variables defined in `.env.example`:
+| Variable | Purpose |
+| --- | --- |
+| `TITLE`, `NEXT_PUBLIC_TITLE` | Site title; set both to the same value. Only `NEXT_PUBLIC_*` reaches client components. |
+| `BETTER_AUTH_SECRET`, `NEXT_PUBLIC_BETTER_AUTH_URL` | Real authentication (unused in the export) |
+| `DATABASE_URL` | PostgreSQL connection for Drizzle (unused) |
+| `REDIS_URL` | Redis URL for session/cache (unused) |
+| `RESEND_API_KEY`, `NEXT_PUBLIC_FROM_EMAIL` | Transactional email (unused) |
+| `EXCHANGERATE_KEY`, `COINLAYER_KEY` | Live FX/crypto rates; the demo uses fixed rates |
+| `NEXT_PUBLIC_CLOUDINARY_*` | Image upload hosting |
+| `TG_TOKEN`, `TG_ADMIN` | Telegram notifications (optional) |
+| `TRUSTED_ORIGINS`, `NEXT_PUBLIC_COMPLAINTS_EMAIL` | Origin allow-list and support address |
 
-- **Application Title**: `TITLE=Empower Bonds` and `NEXT_PUBLIC_TITLE=Empower Bonds` — set both to the same value. `TITLE` is read on the server; `NEXT_PUBLIC_TITLE` is what the client-rendered sections (hero, testimonials, logo) read, because non-public variables are not available in the browser bundle.
-- **Telegram Configuration** (optional): `TG_TOKEN`, `TG_ADMIN`
-- **Cloudinary Configuration** (for image uploads): `NEXT_PUBLIC_CLOUDINARY_NAME`, `NEXT_PUBLIC_CLOUDINARY_API`, `NEXT_PUBLIC_CLOUDINARY_SECRET`
-- **Authentication Configuration**: `BETTER_AUTH_SECRET`, `NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000`
-- **Redis Configuration**: `REDIS_URL=redis://localhost:6379`
-- **Database Configuration**: `DATABASE_URL=postgresql://username:password@localhost/db_name`
-- **Email Configuration**: `RESEND_API_KEY`, `NEXT_PUBLIC_FROM_EMAIL='Empower Bonds <account@domain.tld>'`
-- **Financial Data APIs**: `EXCHANGERATE_KEY`, `COINLAYER_KEY`
-- **Security Configuration**: `TRUSTED_ORIGIN=empowerbonds.online,empowerbonds.io`, `COMPLAINTS_EMAIL=info@domain.tld`
-
-**Note**: Keep sensitive values (e.g., `BETTER_AUTH_SECRET`, API keys) secret and exclude `.env.local` from version control (add to `.gitignore`).
+Keep real secrets in `.env.local` (git-ignored) or your host's secret manager, never in `src/config.ts`.
 
 ## Usage
 
-### Demo sign-in
+- Sign in with the demo credentials to reach `/dashboard`; every dashboard page shows the same sample account data.
+- Use the dashboard navigation to move between overview, accounts, transactions, cards, statements, security, settings and support.
+- The auth pages under `/auth/*` render, but only login and sign-up do anything locally — password reset, email confirmation and two-factor submission require the removed backend and will not complete.
 
-The login form is pre-filled with the sample account credentials:
+## Design credits
 
-| Field    | Value                    |
-| -------- | ------------------------ |
-| Email    | `gloria.morgan@gmail.com` |
-| Password | `Morgan2026!`            |
-
-Signing in with these opens the sample dashboard, which is backed by local demo data (accounts, transactions, cards, statements and settings are read-only). The credentials live in `src/lib/demo-credentials.ts` and are public demo values — change or remove them before using this project for real accounts.
-
-- Navigate to the Home, About, Career, and Security pages via the navigation menu.
-- Access authentication pages (e.g., `/login`, `/register`) to test registration, login, password reset, and email verification.
-- Blocked account scenarios are handled with a dedicated page.
-- Financial data integration (via `EXCHANGERATE_KEY`, `COINLAYER_KEY`) is available for future dashboard features.
-
-## Project Structure
-
-```txt
-empower-bonds/
-├── src/
-│   ├── app/                                # Main App
-│   │   ├── global.css                      # Tailwindcss 4.0 Configuration and Styles
-│   │   ├── favicon.ico                     # Favicon
-│   │   ├── (static)/                       # Static Pages
-│   │   │    ├── page.tsx                   # Home Page
-│   │   │    ├── layout.tsx                 # Layout Template
-│   │   │    ├── robots.tsx                 # Robots (SEO)
-│   │   │    ├── sitemaps.tsx               # Sitemaps (SEO)
-│   │   │    ├── about/                     # About Page
-│   │   │    |   ├── page.tsx               
-│   │   │    ├── careers/                   # Careers Page
-│   │   │    |   ├── page.tsx               
-│   │   │    ├── security/                  # Security Page
-│   │   │    |   ├── page.tsx               
-│   │   │    ├── auth/                      # Authentication Pages
-│   │   │    |   ├── register/              # Registration page
-│   │   │    |   |  ├── page.tsx               
-│   │   │    |   ├── login/                 # Login page
-│   │   │    |   |  ├── page.tsx               
-│   │   │    |   ├── forgot-password/       # Forgot Password page
-│   │   │    |   |  ├── page.tsx               
-│   │   │    |   ├── reset-password/        # Password Reset page
-│   │   │    |   |  ├── page.tsx               
-│   │   │    |   ├── confirm-code/          # Email Verification page
-│   │   │    |   |  ├── page.tsx               
-│   │   │    |   ├── blocked/               # Blocked Account page
-│   │   │    |   └──── page.tsx               
-│   ├── components/                         # Shadcn Components, Custom Components and Forms
-│   ├── db/                                 # Database Configuration
-│   ├── hooks/                              # Custom Hooks
-│   ├── lib/                                # Libraries (BetterAuth Setup)
-│   ├── server/                             # Server actions
-│   ├── types/                              # Typescript Types
-│   └── config.ts                           # Configurations
-│   └── middleware.ts                       # Middleware Configuration
-├── public/                                 # Static assets
-├── .env.example                            # Environment variable template
-├── next.config.ts                          # Next.js configuration
-├── package.json                            # Project dependencies and scripts
-├── postcss.config.mjs                      # Postcss for tailwind
-├── README.md                               # This file
-├── LICENSE                                 # License Instructions
-├── CONTRIBUTING.md                         # Contribution guidelines
-└── CHANGELOG.md                            # Change log
-```
+Based on the Figma design by Pragadesh ([Banking Company Website UI Template](https://www.figma.com/community/file/1298887728670431393/banking-company-website-ui-template-design-in-dark-theme-free-editable), free editable community file). Contact: [pragadesh37v@gmail.com](mailto:pragadesh37v@gmail.com).
 
 ## Contributing
 
-This project is open-source and welcomes contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute, report bugs, or suggest features. Add your name to the contributors list below after your first accepted pull request.
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Add your name below after your first accepted pull request.
 
 ### Contributors
 
@@ -238,21 +166,8 @@ This project is open-source and welcomes contributions! Please see [CONTRIBUTING
 
 ## License
 
-Empower Bonds is free to use under the Apache 2.0 License. See the [LICENSE](LICENSE) file for details.
-
-## Future Plans
-
-- **Dashboard Integration**: Develop a dashboard for account management, transaction history, and financial insights using `EXCHANGERATE_KEY` and `COINLAYER_KEY`.
-- **Enhanced Security**: Implement multi-factor authentication (MFA) and advanced fraud detection.
-- **Email Enhancements**: Expand Resend email features for notifications and alerts.
-
-### Notes
-
-- **Test the Setup**: Set up `.env.local` and run `npm run dev` to verify the app loads with "Empower Bonds" as the title.
-- **Environment Setup**: Ensure Redis and PostgreSQL are running locally or update URLs for cloud services.
-- **Authentication**: Test better-auth flows with `BETTER_AUTH_SECRET` and `NEXT_PUBLIC_BETTER_AUTH_URL`.
-- **Financial APIs**: Integrate `EXCHANGERATE_KEY` and `COINLAYER_KEY` in the future dashboard.
+Apache 2.0 — see [LICENSE](LICENSE).
 
 ## Support
 
-For issues or questions, open an issue on [GitHub](https://github.com/david-jerry/empower-bond-free-template/issues) or contact the maintainer at [jeremiahedavid@gmail.com](mailto:jeremiahedavid@gmail.com).
+Open an issue on [GitHub](https://github.com/david-jerry/empower-bond-free-template/issues), or email [support@empowerbonds.com](mailto:support@empowerbonds.com).
