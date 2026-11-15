@@ -2,7 +2,6 @@ import Link from "next/link"
 import type { Metadata } from "next"
 import { RiCheckLine, RiTimeLine } from "react-icons/ri"
 import config from "@/config"
-import { startDemoSession } from "@/server/action/demoAction"
 
 export const metadata: Metadata = {
 	title: "Getting your account ready",
@@ -11,7 +10,7 @@ export const metadata: Metadata = {
 
 const steps = [
 	"Your profile has been created.",
-	"A verification email is on its way — open it to confirm your address.",
+	"We are completing the final security checks on your new account.",
 	"We are opening your first bank account and setting your preferences.",
 ]
 
@@ -28,7 +27,7 @@ export default function AccountReadyPage() {
 					</h1>
 					<p className="text-sm text-gray-20">
 						Thanks for joining {config.TITLE}. We are putting the finishing touches on
-						your account — this usually takes a few seconds.
+						your account — this usually takes a few hours.
 					</p>
 				</div>
 
@@ -47,16 +46,8 @@ export default function AccountReadyPage() {
 					<Link href="/auth/login" className="default-button w-full max-w-[260px] text-center">
 						Continue to sign in
 					</Link>
-					<form action={startDemoSession} className="w-full flex justify-center">
-						<button
-							type="submit"
-							className="default-button-alt w-full max-w-[260px] text-white"
-						>
-							Explore the demo dashboard
-						</button>
-					</form>
 					<p className="text-[11px] text-gray-30 text-center">
-						You can sign in as soon as you have verified your email address.
+						You can sign in as soon as your account is ready.
 					</p>
 				</div>
 			</div>

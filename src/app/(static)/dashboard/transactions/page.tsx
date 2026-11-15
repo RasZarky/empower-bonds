@@ -1,10 +1,17 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
-import { redirect } from "next/navigation"
-import { getDashboardViewer } from "@/lib/dashboard-session"
-import { getTransactionsAction } from "@/server/action/transactionAction"
 import { filterDemoTransactions } from "@/lib/demo"
 import type { Transaction, TransactionStatusEnum, TransactionTypeEnum } from "@/types/db"
+import {
+	isTransfer,
+	summarizeTransactions,
+	transactionAmount,
+	transactionDirection,
+} from "@/lib/finance"
 import { formatCurrency, formatDateTime } from "@/lib/format"
+import ExportTransactions from "@/components/dashboard/ExportTransactions"
 
 const transactionTypes = [
 	"deposit",
@@ -23,13 +30,6 @@ const transactionStatuses = [
 	"refunded",
 ] as const
 
-type SearchParams = Promise<{
-	type?: string
-	status?: string
-	q?: string
-	cursor?: string
-}>
-
 const statusStyles: Record<string, string> = {
 	completed: "text-green-80 bg-green-80/10 border-green-80/30",
 	pending: "text-gray-20 bg-gray-80 border-gray-60",
@@ -41,85 +41,65 @@ const statusStyles: Record<string, string> = {
 const controlClassName =
 	"h-9 rounded-full border-[0.5px] border-gray-80 bg-gray-90 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-80"
 
-export default async function TransactionsPage({
-	searchParams,
-}: {
-	searchParams: SearchParams
-}) {
-	const viewer = await getDashboardViewer()
+export default function TransactionsPage() {
+	// Filtering happens in the browser because the exported site has no server.
+	const [typeFilter, setTypeFilter] = useState("")
+	const [statusFilter, setStatusFilter] = useState("")
+	const [searchFilter, setSearchFilter] = useState("")
 
-	if (!viewer) {
-		redirect("/auth/login?redirect=/dashboard/transactions")
-	}
-
-	const params = await searchParams
-
-	const type = transactionTypes.includes(params.type as (typeof transactionTypes)[number])
-		? (params.type as TransactionTypeEnum)
+	const type = transactionTypes.includes(typeFilter as (typeof transactionTypes)[number])
+		? (typeFilter as TransactionTypeEnum)
 		: undefined
 	const status = transactionStatuses.includes(
-		params.status as (typeof transactionStatuses)[number]
+		statusFilter as (typeof transactionStatuses)[number]
 	)
-		? (params.status as TransactionStatusEnum)
+		? (statusFilter as TransactionStatusEnum)
 		: undefined
-	const search = params.q?.trim() || undefined
+	const search = searchFilter.trim() || undefined
 
-	let transactions: Transaction[]
-	let hasNextPage = false
-	let nextCursor: string | Date | number | null = null
-	let loadError: string | undefined
-
-	if (viewer.demo) {
-		transactions = filterDemoTransactions({ type, status, search })
-	} else {
-		const result = await getTransactionsAction(
-			viewer.userId,
-			{ type, status, search },
-			params.cursor,
-			10
-		)
-
-		if (result.success === false) {
-			loadError = result.error || "Could not load transactions."
-			transactions = []
-		} else {
-			transactions = result.data?.data ?? []
-			nextCursor = result.data?.nextCursor ?? null
-			hasNextPage = result.data?.hasNextPage ?? false
-		}
-	}
-
-	const pageParams = new URLSearchParams()
-	if (type) pageParams.set("type", type)
-	if (status) pageParams.set("status", status)
-	if (search) pageParams.set("q", search)
-	if (nextCursor) pageParams.set("cursor", String(nextCursor))
-
+	const transactions: Transaction[] = filterDemoTransactions({ type, status, search })
+	const loadError: string | undefined = undefined
 	const hasFilters = Boolean(type || status || search)
+	const pageSummary = summarizeTransactions(transactions)
+
+	const resetFilters = () => {
+		setTypeFilter("")
+		setStatusFilter("")
+		setSearchFilter("")
+	}
 
 	return (
 		<>
-			<header className="flex flex-col gap-2">
-				<p className="text-[10px] font-medium uppercase tracking-[0.2em] text-green-80">
-					Transactions
-				</p>
-				<h1 className="text-2xl md:text-3xl font-semibold text-white">Transaction history</h1>
-				<p className="text-sm text-gray-20">
-					Search and filter every movement on your accounts.
-				</p>
+			<header className="flex flex-wrap items-start justify-between gap-4">
+				<div className="flex flex-col gap-2">
+					<p className="text-[10px] font-medium uppercase tracking-[0.2em] text-green-80">
+						Transactions
+					</p>
+					<h1 className="text-2xl md:text-3xl font-semibold text-white">
+						Transaction history
+					</h1>
+					<p className="text-sm text-gray-20">
+						Search and filter every movement on your accounts.
+					</p>
+				</div>
+				<div className="flex items-center gap-4">
+					<ExportTransactions transactions={transactions} />
+					<Link
+						href="/dashboard/statements"
+						className="text-xs font-medium text-green-80 transition-colors duration-300 hover:text-green-70"
+					>
+						Statements
+					</Link>
+				</div>
 			</header>
 
-			<form
-				className="rounded-xl border-[0.5px] border-gray-70 bg-gray-90 p-6 flex flex-wrap items-end gap-3"
-				action="/dashboard/transactions"
-				method="get"
-			>
+			<div className="rounded-xl border-[0.5px] border-gray-70 bg-gray-90 p-6 flex flex-wrap items-end gap-3">
 				<label className="flex flex-col gap-1.5">
 					<span className="text-[10px] uppercase tracking-[0.2em] text-gray-30">Search</span>
 					<input
 						type="search"
-						name="q"
-						defaultValue={search ?? ""}
+						value={searchFilter}
+						onChange={(event) => setSearchFilter(event.target.value)}
 						placeholder="Description"
 						className={`${controlClassName} w-full sm:w-56`}
 					/>
@@ -127,7 +107,11 @@ export default async function TransactionsPage({
 
 				<label className="flex flex-col gap-1.5">
 					<span className="text-[10px] uppercase tracking-[0.2em] text-gray-30">Type</span>
-					<select name="type" defaultValue={type ?? ""} className={controlClassName}>
+					<select
+						value={typeFilter}
+						onChange={(event) => setTypeFilter(event.target.value)}
+						className={controlClassName}
+					>
 						<option value="">All types</option>
 						{transactionTypes.map((value) => (
 							<option key={value} value={value}>
@@ -139,7 +123,11 @@ export default async function TransactionsPage({
 
 				<label className="flex flex-col gap-1.5">
 					<span className="text-[10px] uppercase tracking-[0.2em] text-gray-30">Status</span>
-					<select name="status" defaultValue={status ?? ""} className={controlClassName}>
+					<select
+						value={statusFilter}
+						onChange={(event) => setStatusFilter(event.target.value)}
+						className={controlClassName}
+					>
 						<option value="">All statuses</option>
 						{transactionStatuses.map((value) => (
 							<option key={value} value={value}>
@@ -149,16 +137,38 @@ export default async function TransactionsPage({
 					</select>
 				</label>
 
-				<button type="submit" className="default-button">
-					Apply
-				</button>
-
 				{hasFilters && (
-					<Link href="/dashboard/transactions" className="default-button-alt">
+					<button type="button" onClick={resetFilters} className="default-button-alt">
 						Reset
-					</Link>
+					</button>
 				)}
-			</form>
+			</div>
+
+			<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+				<div className="rounded-xl border-[0.5px] border-gray-70 bg-gray-90 p-6 flex flex-col gap-1">
+					<span className="text-[10px] uppercase tracking-[0.2em] text-gray-30">Money in</span>
+					<span className="text-lg font-semibold text-green-80">
+						{formatCurrency(pageSummary.income)}
+					</span>
+				</div>
+				<div className="rounded-xl border-[0.5px] border-gray-70 bg-gray-90 p-6 flex flex-col gap-1">
+					<span className="text-[10px] uppercase tracking-[0.2em] text-gray-30">Money out</span>
+					<span className="text-lg font-semibold text-white">
+						{formatCurrency(pageSummary.expenses)}
+					</span>
+				</div>
+				<div className="rounded-xl border-[0.5px] border-gray-70 bg-gray-90 p-6 flex flex-col gap-1">
+					<span className="text-[10px] uppercase tracking-[0.2em] text-gray-30">Net</span>
+					<span
+						className={`text-lg font-semibold ${
+							pageSummary.net >= 0 ? "text-green-80" : "text-red-400"
+						}`}
+					>
+						{pageSummary.net >= 0 ? "+" : "−"}
+						{formatCurrency(Math.abs(pageSummary.net))}
+					</span>
+				</div>
+			</div>
 
 			<section className="rounded-xl border-[0.5px] border-gray-70 bg-gray-90 overflow-hidden">
 				{loadError ? (
@@ -208,13 +218,18 @@ export default async function TransactionsPage({
 										</td>
 										<td
 											className={`px-6 py-4 text-right font-semibold whitespace-nowrap ${
-												transaction.type === "deposit"
+												!isTransfer(transaction) &&
+												transactionDirection(transaction) === "in"
 													? "text-green-80"
 													: "text-gray-20"
 											}`}
 										>
-											{transaction.type === "deposit" ? "+" : "-"}
-											{formatCurrency(transaction.amount)}
+											{isTransfer(transaction)
+												? ""
+												: transactionDirection(transaction) === "in"
+													? "+"
+													: "−"}
+											{formatCurrency(transactionAmount(transaction))}
 										</td>
 									</tr>
 								))}
@@ -224,16 +239,6 @@ export default async function TransactionsPage({
 				)}
 			</section>
 
-			{hasNextPage && (
-				<div className="flex justify-end">
-					<Link
-						href={`/dashboard/transactions?${pageParams.toString()}`}
-						className="default-button-alt"
-					>
-						Older transactions
-					</Link>
-				</div>
-			)}
 		</>
 	)
 }

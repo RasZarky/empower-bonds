@@ -13,6 +13,13 @@ import { twoFactor } from "better-auth/plugins/two-factor";
 import { deviceAuthorization, lastLoginMethod, openAPI } from "better-auth/plugins";
 import { OTPEmail } from "./email/otpEmail";
 
+// In development the dev server may run on any port (3000 is often taken), so
+// compare against the whole localhost range instead of a single URL.
+const devTrustedOrigins =
+    config.NODE_ENV === "production"
+        ? []
+        : ["http://localhost:*", "http://127.0.0.1:*"]
+
 export const auth = betterAuth({
     appName: config.TITLE,
     baseURL: config.BASE_URL,
@@ -129,7 +136,7 @@ export const auth = betterAuth({
             maxAge: 5 * 60 // Cache duration in seconds
         }
     },
-    trustedOrigins: config.TRUSTED_ORIGINS
+    trustedOrigins: [...config.TRUSTED_ORIGINS, ...devTrustedOrigins]
 });
 
 export type AuthSession = typeof auth.$Infer.Session

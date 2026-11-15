@@ -1,165 +1,298 @@
-import type { BankAccount, Preference, Session, Transaction, User } from "@/types/db"
+import type {
+	BankAccount,
+	Preference,
+	Session,
+	Transaction,
+	TransactionStatusEnum,
+	TransactionTypeEnum,
+	User,
+} from "@/types/db"
 
 /**
- * Sample data for the demo dashboard. Nothing here touches the database —
- * it exists so the UI can be reviewed without Postgres, Redis or Resend.
+ * Sample data for the demo dashboard.
+ *
+ * Balances are not hard-coded: every account starts from an opening balance and
+ * the closing balance is derived from the ledger below, so the dashboard totals
+ * always reconcile with the transaction history.
  */
 
-const daysAgo = (days: number, hour = 10) => {
+export type DemoTransaction = Transaction & { direction: "in" | "out" }
+
+const NOW = new Date()
+
+/** Returns a date inside the month `monthsAgo`, or null when it would be in the future. */
+function dateInMonth(monthsAgo: number, day: number): Date | null {
+	const date = new Date()
+	date.setDate(1)
+	date.setMonth(date.getMonth() - monthsAgo)
+	date.setDate(day)
+	date.setHours(10, 15, 0, 0)
+	return date > NOW ? null : date
+}
+
+function daysAgo(days: number, hour = 10): Date {
 	const date = new Date()
 	date.setDate(date.getDate() - days)
 	date.setHours(hour, 15, 0, 0)
 	return date
 }
 
+/**
+ * The demo account always signed in two days ago. Evaluated on every call so the
+ * dashboard date follows the calendar instead of freezing at build/boot time.
+ */
+export function demoLastSignIn(): Date {
+	const date = new Date()
+	date.setDate(date.getDate() - 2)
+	date.setHours(9, 30, 0, 0)
+	return date
+}
+
+const accountSeeds = {
+	checking: {
+		id: "demo-account-checking",
+		accountType: "checking" as const,
+		accountName: "Everyday checking",
+		accountNumber: "0821012345",
+		currency: "USD",
+		bankName: "Empower Bonds",
+		branchName: "Downtown",
+		opening: 196_961,
+		createdAt: new Date("2023-02-08T09:05:00.000Z"),
+		isPrimary: true,
+	},
+	savings: {
+		id: "demo-account-savings",
+		accountType: "savings" as const,
+		accountName: "High-yield savings",
+		accountNumber: "0822045678",
+		currency: "USD",
+		bankName: "Empower Bonds",
+		branchName: "Downtown",
+		opening: 1_194_755.67,
+		createdAt: new Date("2023-05-19T11:20:00.000Z"),
+		isPrimary: false,
+	},
+	fixed: {
+		id: "demo-account-fixed",
+		accountType: "fixed_deposit" as const,
+		accountName: "Fixed deposit — 12 months",
+		accountNumber: "0825081122",
+		currency: "USD",
+		bankName: "Empower Bonds",
+		branchName: "Corporate",
+		opening: 990_000,
+		createdAt: new Date("2024-01-04T08:40:00.000Z"),
+		isPrimary: false,
+	},
+	euro: {
+		id: "demo-account-euro",
+		accountType: "current" as const,
+		accountName: "Euro account",
+		accountNumber: "0825067890",
+		currency: "EUR",
+		bankName: "Empower Bonds",
+		branchName: "Brussels",
+		opening: 21_400,
+		createdAt: new Date("2024-09-12T08:40:00.000Z"),
+		isPrimary: false,
+	},
+}
+
+type AccountKey = keyof typeof accountSeeds
+
+interface EntrySeed {
+	account: AccountKey
+	date: Date
+	amount: number
+	type: TransactionTypeEnum
+	direction: "in" | "out"
+	description: string
+	status?: TransactionStatusEnum
+}
+
+type RecurringSeed = Omit<EntrySeed, "date"> & { day: number }
+type OneOffSeed = Omit<EntrySeed, "date"> & { monthsAgo: number; day: number }
+
+const RECURRING = [
+	{ day: 1, account: "checking", amount: 26_500, type: "deposit", direction: "in", description: "Salary — Northwind Holdings" },
+	{ day: 3, account: "checking", amount: 8_420.55, type: "withdrawal", direction: "out", description: "Mortgage payment" },
+	{ day: 5, account: "checking", amount: 340.2, type: "withdrawal", direction: "out", description: "Electricity & water" },
+	{ day: 7, account: "checking", amount: 1_240.75, type: "purchase", direction: "out", description: "Groceries — Whole Foods" },
+	{ day: 12, account: "checking", amount: 486.4, type: "purchase", direction: "out", description: "Dining & entertainment" },
+	{ day: 15, account: "checking", amount: 214.3, type: "purchase", direction: "out", description: "Fuel & transport" },
+	{ day: 20, account: "checking", amount: 96.4, type: "purchase", direction: "out", description: "Subscriptions — streaming & software" },
+	{ day: 24, account: "checking", amount: 412, type: "withdrawal", direction: "out", description: "Home insurance" },
+] satisfies RecurringSeed[]
+
+const ONE_OFFS: {
+	monthsAgo: number
+	day: number
+	account: AccountKey
+	amount: number
+	type: TransactionTypeEnum
+	direction: "in" | "out"
+	description: string
+	status?: TransactionStatusEnum
+}[] = [
+	{ monthsAgo: 7, day: 14, account: "fixed", amount: 45_000, type: "withdrawal", direction: "out", description: "Index fund purchase" },
+	{ monthsAgo: 5, day: 9, account: "savings", amount: 62_000, type: "deposit", direction: "in", description: "Wire in — property sale proceeds" },
+	{ monthsAgo: 4, day: 22, account: "checking", amount: 32_000, type: "withdrawal", direction: "out", description: "Vehicle purchase" },
+	{ monthsAgo: 3, day: 6, account: "checking", amount: 42_000, type: "deposit", direction: "in", description: "Annual performance bonus" },
+	{ monthsAgo: 2, day: 11, account: "checking", amount: 7_800, type: "purchase", direction: "out", description: "Travel — Lisbon" },
+	{ monthsAgo: 2, day: 27, account: "checking", amount: 5_000, type: "withdrawal", direction: "out", description: "Charity donation" },
+	{ monthsAgo: 1, day: 8, account: "checking", amount: 6_400, type: "deposit", direction: "in", description: "Tax refund" },
+	{ monthsAgo: 1, day: 19, account: "euro", amount: 2_100, type: "withdrawal", direction: "out", description: "Brussels rent" },
+	{ monthsAgo: 1, day: 21, account: "euro", amount: 3_400, type: "deposit", direction: "in", description: "Client payment — EUR" },
+	{ monthsAgo: 0, day: 2, account: "euro", amount: 480, type: "purchase", direction: "out", description: "Hotel — Brussels" },
+] satisfies OneOffSeed[]
+
+const RECENT: { days: number; account: AccountKey; amount: number; type: TransactionTypeEnum; direction: "in" | "out"; description: string; status?: TransactionStatusEnum }[] = [
+	{ days: 0, account: "checking", amount: 68.4, type: "purchase", direction: "out", description: "Coffee & lunch", status: "pending" },
+	{ days: 1, account: "checking", amount: 1_290, type: "purchase", direction: "out", description: "Apple Store — MacBook" },
+	{ days: 2, account: "checking", amount: 240.5, type: "purchase", direction: "out", description: "Groceries — Trader Joe's" },
+]
+
+function buildLedger(): EntrySeed[] {
+	const seeds: EntrySeed[] = []
+
+	// A full year of recurring activity so the dashboard can chart 12 months.
+	for (let monthsAgo = 0; monthsAgo < 12; monthsAgo++) {
+		for (const item of RECURRING) {
+			const date = dateInMonth(monthsAgo, item.day)
+			if (!date) continue
+			seeds.push({
+				account: item.account,
+				date,
+				amount: item.amount,
+				type: item.type,
+				direction: item.direction,
+				description: item.description,
+			})
+		}
+
+		// Transfers are double-entry so both balances stay consistent.
+		const savingsDate = dateInMonth(monthsAgo, 16)
+		if (savingsDate) {
+			seeds.push({
+				account: "checking",
+				date: savingsDate,
+				amount: 6_000,
+				type: "transfer",
+				direction: "out",
+				description: "Transfer to high-yield savings",
+			})
+			seeds.push({
+				account: "savings",
+				date: savingsDate,
+				amount: 6_000,
+				type: "transfer",
+				direction: "in",
+				description: "Transfer from everyday checking",
+			})
+		}
+
+		const fixedDate = dateInMonth(monthsAgo, 18)
+		if (fixedDate) {
+			seeds.push({
+				account: "checking",
+				date: fixedDate,
+				amount: 4_500,
+				type: "transfer",
+				direction: "out",
+				description: "Monthly deposit to fixed deposit",
+			})
+			seeds.push({
+				account: "fixed",
+				date: fixedDate,
+				amount: 4_500,
+				type: "transfer",
+				direction: "in",
+				description: "Monthly deposit from everyday checking",
+			})
+		}
+	}
+
+	for (const entry of ONE_OFFS) {
+		const date = dateInMonth(entry.monthsAgo, entry.day)
+		if (!date) continue
+		seeds.push({ ...entry, date })
+	}
+
+	for (const entry of RECENT) {
+		seeds.push({
+			account: entry.account,
+			date: daysAgo(entry.days, 9 + entry.days),
+			amount: entry.amount,
+			type: entry.type,
+			direction: entry.direction,
+			description: entry.description,
+			status: entry.status,
+		})
+	}
+
+	return seeds
+}
+
+const seeds = buildLedger()
+
+/** Closing balance for every demo account, derived from the opening balance + ledger. */
+const closingBalances = seeds.reduce<Record<string, number>>((balances, entry) => {
+	const account = accountSeeds[entry.account]
+	const signed = entry.direction === "in" ? entry.amount : -entry.amount
+	balances[account.id] = (balances[account.id] ?? account.opening) + signed
+	return balances
+}, {})
+
 export const DEMO_USER: User = {
 	id: "demo-user",
-	name: "Ada Okafor",
-	email: "ada.demo@empowerbonds.test",
+	name: "Gloria Morgan",
+	email: "gloria.morgan@gmail.com",
 	emailVerified: true,
 	image: null,
 	blocked: false,
 	twoFactorEnabled: false,
 	admin: false,
 	hashedTransactionPin: null,
-	createdAt: new Date("2024-03-12T09:00:00.000Z"),
-	updatedAt: new Date("2026-11-01T09:00:00.000Z"),
+	createdAt: new Date("2023-02-08T09:00:00.000Z"),
+	updatedAt: daysAgo(1),
 }
 
-export const DEMO_ACCOUNTS: BankAccount[] = [
-	{
-		id: "demo-account-checking",
-		userId: DEMO_USER.id,
-		accountNumber: "0821012345",
-		accountType: "checking",
-		balance: "12480.55",
-		currency: "USD",
-		bankName: "Empower Bonds",
-		branchName: "Downtown",
-		accountName: "Everyday checking",
-		status: "active",
-		isPrimary: true,
-		createdAt: new Date("2024-03-12T09:05:00.000Z"),
-		updatedAt: daysAgo(1),
-	},
-	{
-		id: "demo-account-savings",
-		userId: DEMO_USER.id,
-		accountNumber: "0822045678",
-		accountType: "savings",
-		balance: "4210.00",
-		currency: "USD",
-		bankName: "Empower Bonds",
-		branchName: "Downtown",
-		accountName: "Rainy day savings",
-		status: "active",
-		isPrimary: false,
-		createdAt: new Date("2024-06-02T11:20:00.000Z"),
-		updatedAt: daysAgo(4),
-	},
-	{
-		id: "demo-account-euro",
-		userId: DEMO_USER.id,
-		accountNumber: "0825067890",
-		accountType: "fixed_deposit",
-		balance: "1800.00",
-		currency: "EUR",
-		bankName: "Empower Bonds",
-		branchName: "Brussels",
-		accountName: "Euro fixed deposit",
-		status: "active",
-		isPrimary: false,
-		createdAt: new Date("2025-01-18T08:40:00.000Z"),
-		updatedAt: daysAgo(20),
-	},
-]
+export const DEMO_TRANSACTIONS: DemoTransaction[] = seeds
+	.map((entry, index) => {
+		const account = accountSeeds[entry.account]
 
-export const DEMO_TRANSACTIONS: Transaction[] = [
-	{
-		id: "demo-tx-1",
-		userId: DEMO_USER.id,
-		accountId: "demo-account-checking",
-		amount: "2400.00",
-		type: "deposit",
-		status: "completed",
-		description: "Salary — November",
-		transactionRef: "TRX-9F31A2",
-		createdAt: daysAgo(1, 9),
-		updatedAt: daysAgo(1, 9),
-	},
-	{
-		id: "demo-tx-2",
-		userId: DEMO_USER.id,
-		accountId: "demo-account-checking",
-		amount: "84.32",
-		type: "purchase",
-		status: "completed",
-		description: "Whole Foods Market",
-		transactionRef: "TRX-4C08B7",
-		createdAt: daysAgo(2, 18),
-		updatedAt: daysAgo(2, 18),
-	},
-	{
-		id: "demo-tx-3",
-		userId: DEMO_USER.id,
-		accountId: "demo-account-checking",
-		amount: "500.00",
-		type: "transfer",
-		status: "completed",
-		description: "Transfer to rainy day savings",
-		transactionRef: "TRX-77D1E9",
-		createdAt: daysAgo(3, 12),
-		updatedAt: daysAgo(3, 12),
-	},
-	{
-		id: "demo-tx-4",
-		userId: DEMO_USER.id,
-		accountId: "demo-account-savings",
-		amount: "500.00",
-		type: "deposit",
-		status: "completed",
-		description: "Transfer from everyday checking",
-		transactionRef: "TRX-77D1EA",
-		createdAt: daysAgo(3, 12),
-		updatedAt: daysAgo(3, 12),
-	},
-	{
-		id: "demo-tx-5",
-		userId: DEMO_USER.id,
-		accountId: "demo-account-checking",
-		amount: "39.99",
-		type: "fee",
-		status: "completed",
-		description: "Monthly account fee",
-		transactionRef: "TRX-1A55C0",
-		createdAt: daysAgo(5, 8),
-		updatedAt: daysAgo(5, 8),
-	},
-	{
-		id: "demo-tx-6",
-		userId: DEMO_USER.id,
-		accountId: "demo-account-euro",
-		amount: "120.00",
-		type: "withdrawal",
-		status: "pending",
-		description: "ATM withdrawal — Brussels",
-		transactionRef: "TRX-6B2EF4",
-		createdAt: daysAgo(6, 16),
-		updatedAt: daysAgo(6, 16),
-	},
-	{
-		id: "demo-tx-7",
-		userId: DEMO_USER.id,
-		accountId: "demo-account-checking",
-		amount: "18.75",
-		type: "purchase",
-		status: "completed",
-		description: "Spotify subscription",
-		transactionRef: "TRX-2D90AB",
-		createdAt: daysAgo(9, 7),
-		updatedAt: daysAgo(9, 7),
-	},
-]
+		return {
+			id: `demo-tx-${String(index + 1).padStart(3, "0")}`,
+			userId: DEMO_USER.id,
+			accountId: account.id,
+			amount: entry.amount.toFixed(2),
+			type: entry.type,
+			status: entry.status ?? "completed",
+			description: entry.description,
+			transactionRef: `TRX-D${String(index + 1).padStart(4, "0")}`,
+			createdAt: entry.date,
+			updatedAt: entry.date,
+			direction: entry.direction,
+		} satisfies DemoTransaction
+	})
+	.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+
+export const DEMO_ACCOUNTS: BankAccount[] = Object.values(accountSeeds).map((account) => ({
+	id: account.id,
+	userId: DEMO_USER.id,
+	accountNumber: account.accountNumber,
+	accountType: account.accountType,
+	balance: (closingBalances[account.id] ?? account.opening).toFixed(2),
+	currency: account.currency,
+	bankName: account.bankName,
+	branchName: account.branchName,
+	accountName: account.accountName,
+	status: "active",
+	isPrimary: account.isPrimary,
+	createdAt: account.createdAt,
+	updatedAt: daysAgo(1),
+}))
 
 export const DEMO_PREFERENCE: Preference = {
 	id: "demo-preference",
@@ -175,7 +308,7 @@ export const DEMO_PREFERENCE: Preference = {
 	budgetAlertThreshold: "80.00",
 	budgetAlertFrequency: "daily",
 	requireBiometricForSensitiveActions: false,
-	createdAt: new Date("2024-03-12T09:05:00.000Z"),
+	createdAt: new Date("2023-02-08T09:05:00.000Z"),
 	updatedAt: daysAgo(10),
 }
 
@@ -184,7 +317,7 @@ export const DEMO_SESSIONS: Session[] = [
 		id: "demo-session-laptop",
 		expiresAt: daysAgo(-6),
 		token: "demo-token-laptop",
-		createdAt: daysAgo(2, 20),
+		createdAt: demoLastSignIn(),
 		updatedAt: daysAgo(1, 20),
 		ipAddress: "192.168.0.24",
 		userAgent: "Chrome on macOS",
@@ -200,6 +333,16 @@ export const DEMO_SESSIONS: Session[] = [
 		userAgent: "Empower Bonds app on Android",
 		userId: DEMO_USER.id,
 	},
+	{
+		id: "demo-session-tablet",
+		expiresAt: daysAgo(-2),
+		token: "demo-token-tablet",
+		createdAt: daysAgo(9, 13),
+		updatedAt: daysAgo(3, 13),
+		ipAddress: "192.168.0.44",
+		userAgent: "Safari on iPad",
+		userId: DEMO_USER.id,
+	},
 ]
 
 /** Mirrors the filters accepted by `getTransactionsAction`, applied in memory. */
@@ -207,7 +350,7 @@ export function filterDemoTransactions(filters?: {
 	type?: string
 	status?: string
 	search?: string
-}): Transaction[] {
+}): DemoTransaction[] {
 	const search = filters?.search?.toLowerCase()
 
 	return DEMO_TRANSACTIONS.filter((transaction) => {

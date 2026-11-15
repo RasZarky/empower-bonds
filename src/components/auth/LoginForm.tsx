@@ -1,13 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import React, { useEffect, useTransition } from "react"
+import React from "react"
 import FormSection from "./FormSection"
 import z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { authClient } from "@/lib/auth-client"
 import {
 	Form,
 	FormControl,
@@ -17,13 +15,13 @@ import {
 	FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import config from "@/config"
 import { useForm } from "react-hook-form"
-import { useZustand } from "@/hooks/useZustand"
 import { FaEye, FaEyeSlash } from "react-icons/fa6"
+import { RiLoader4Line } from "react-icons/ri"
 import Link from "next/link"
 import { Checkbox } from "../ui/checkbox"
-import { startDemoSession } from "@/server/action/demoAction"
+import { DEMO_CREDENTIALS } from "@/lib/demo-credentials"
+
 
 export const LoginSchema = z.object({
 	email: z.email({ message: "Invalid email address" }),
@@ -34,11 +32,10 @@ export const LoginSchema = z.object({
 })
 
 function FormComponent() {
-	const { setUser } = useZustand()
 	const [viewPassword, setViewPassword] = React.useState(false)
 	const [checked, setChecked] = React.useState(false)
 	const router = useRouter()
-	const [pending, startTransition] = useTransition()
+	const [submitting, setSubmitting] = React.useState(false)
 
 	const form = useForm<z.infer<typeof LoginSchema>>({
 		resolver: zodResolver(LoginSchema),
@@ -49,80 +46,27 @@ function FormComponent() {
 		},
 	})
 
-	useEffect(() => {
-		if (
-			!PublicKeyCredential.isConditionalMediationAvailable ||
-			!PublicKeyCredential.isConditionalMediationAvailable()
-		) {
+	const handleSubmit = async (data: z.infer<typeof LoginSchema>) => {
+		setSubmitting(true)
+
+		// Simulate the round trip a real sign-in would make.
+		await new Promise((resolve) => setTimeout(resolve, 1200))
+
+		// The exported site has no backend: the sample credentials open the demo
+		// dashboard, anything else is rejected in the browser.
+		const matchesSample =
+			data.email.trim().toLowerCase() === DEMO_CREDENTIALS.email &&
+			data.password === DEMO_CREDENTIALS.password
+
+		if (!matchesSample) {
+			setSubmitting(false)
+			toast.error("Authentication Error", {
+				description: "Check your email and password and try again.",
+			})
 			return
 		}
 
-		void authClient.signIn.passkey({
-			autoFill: true,
-			fetchOptions: {
-				onSuccess() {
-					toast.success("Authenticated", {
-						description: "You have successfully logged in!",
-					})
-					router.push("/dashboard") // Redirect to login page
-				},
-				onError(context) {
-					toast.error(
-						context.error.name || "Passkey Authentication Error",
-						{
-							description:
-								context.error.message ||
-								"Passkey Authentication failed",
-						}
-					)
-				},
-			},
-		})
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [])
-
-	const handleSubmit = async (data: z.infer<typeof LoginSchema>) => {
-		// Handle registration logic here
-		try {
-			LoginSchema.parse(data) // Validate data against the schema
-			// Simulate registration logic
-			await authClient.signIn.email(
-				{
-					email: data.email,
-					password: data.password,
-					rememberMe: checked,
-					callbackURL: `${config.BASE_URL}/dashboard`,
-				},
-				{
-					onSuccess(context) {
-						startTransition(() => {
-							setUser(context.data.user) // Assuming setUser is a function to set the user state
-							// Simulate registration success
-							toast.success("Authenticated", {
-								description: "You have successfully logged in!",
-							})
-
-							router.push("/dashboard") // Redirect to login page
-						})
-					},
-					onError(context) {
-						setUser(null) // Clear user state on error
-						toast.error(
-							context.error.name || "Authentication Error",
-							{
-								description:
-									context.error.message ||
-									"Authentication failed",
-							}
-						)
-					},
-				}
-			)
-		} catch (error: any) {
-			toast.error("Authentication Error", {
-				description: error.message || "Authentication failed",
-			})
-		}
+		router.push("/dashboard")
 	}
 
 	return (
@@ -215,15 +159,23 @@ function FormComponent() {
 						Forgot Password
 					</Link>
 					<button
-						disabled={pending}
+						disabled={submitting}
 						type="submit"
-						className="default-button mx-auto max-w-[260px] w-full"
+						className="default-button mx-auto max-w-[260px] w-full disabled:cursor-not-allowed disabled:opacity-60"
 					>
-						{pending ? "Submitting" : "Sign In"}
+						{submitting ? (
+							<span className="inline-flex items-center justify-center gap-2">
+								<RiLoader4Line className="h-4 w-4 animate-spin" />
+								Signing in…
+							</span>
+						) : (
+							"Sign In"
+						)}
 					</button>
 					<button
 						onClick={() => router.push("/auth/register")}
-						className="default-button-alt mx-auto max-w-[260px] w-full hover:text-white text-white"
+						disabled={submitting}
+						className="default-button-alt mx-auto max-w-[260px] w-full hover:text-white text-white disabled:cursor-not-allowed disabled:opacity-60"
 						type="button"
 					>
 						Sign Up
@@ -234,35 +186,12 @@ function FormComponent() {
 	)
 }
 
-function DemoEntry() {
-	return (
-		<div className="mt-8 flex flex-col items-center gap-3 border-t border-gray-70 pt-6">
-			<p className="text-center text-xs text-gray-30">
-				Just exploring? Open the dashboard with sample data — no account required.
-			</p>
-			<form action={startDemoSession} className="flex w-full justify-center">
-				<button
-					type="submit"
-					className="default-button-alt w-full max-w-[260px] text-white"
-				>
-					View demo dashboard
-				</button>
-			</form>
-		</div>
-	)
-}
-
 export default function LoginForm() {
 	return (
 		<FormSection
 			title="Login"
 			description="Welcome back. Please login to access your account."
-			form={
-				<>
-					<FormComponent />
-					<DemoEntry />
-				</>
-			}
+			form={<FormComponent />}
 		/>
 	)
 }

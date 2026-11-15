@@ -2,8 +2,6 @@
 import React from "react"
 import Link from "next/link"
 import { Separator } from "../ui/separator"
-import { BsFacebook, BsLinkedin, BsTwitterX } from "react-icons/bs"
-import { RiMapPin2Fill, RiPhoneFill } from "react-icons/ri"
 import { IoMail } from "react-icons/io5"
 import Logo from "./Logo"
 import config from "@/config"
@@ -21,39 +19,7 @@ const contactInfo = [
 	{
 		href: `mailto:${config.SUPPORT}`,
 		label: config.SUPPORT,
-		icon: <IoMail className="w-4 h-4 text-green-80" />,
-	},
-	{
-		href: `tel://${config.TEL.replace("(", "").replace(")", "").replace("+", "").replace("-", "").replace(" ", "").replace(" ", "")}`,
-		label: config.TEL,
-		icon: <RiPhoneFill className="w-4 h-4 text-green-80" />,
-	},
-	{
-		href: config.MAP,
-		label: config.ADDRESS,
-		icon: <RiMapPin2Fill className="w-4 h-4 text-green-80" />,
-	},
-]
-
-// Social media links configuration
-const socialLinks = [
-	{
-		href: config.FACEBOOK,
-		icon: (
-			<BsFacebook className="w-4 h-4 group-hover:text-green-80 text-gray-90 duration-300 ease-in-out transition-colors" />
-		),
-	},
-	{
-		href: config.TWITTERX,
-		icon: (
-			<BsTwitterX className="w-4 h-4 group-hover:text-green-80 text-gray-90 duration-300 ease-in-out transition-colors" />
-		),
-	},
-	{
-		href: config.LINKEDIN,
-		icon: (
-			<BsLinkedin className="w-4 h-4 group-hover:text-green-80 text-gray-90 duration-300 ease-in-out transition-colors" />
-		),
+					icon: <IoMail className="w-4 h-4 text-green-80" />,
 	},
 ]
 
@@ -130,24 +96,9 @@ const ContactInfo = () => (
 	</div>
 )
 
-// Component for rendering footer bottom (social icons, copyright, legal links)
+// Component for rendering footer bottom (copyright, legal links)
 const FooterBottom = () => (
-	<div className="relative w-full rounded-xl lg:rounded-full bg-gray-100 p-4 pt-10 lg:pt-4 flex flex-col lg:flex-row items-center text-center text-xs mt-4 lg:justify-between gap-4">
-		{/* Social Media Icons */}
-		<div className="absolute lg:relative -top-4 lg:top-0 flex items-center gap-2">
-			{socialLinks.map((social) => (
-				<Link
-					key={social.href}
-					href={social.href}
-					target="_blank"
-					rel="noopener noreferrer"
-					className="p-1.5 rounded-full hover:bg-gray-90 bg-green-80 transition-colors duration-300 group"
-				>
-					{social.icon}
-				</Link>
-			))}
-		</div>
-
+	<div className="relative w-full rounded-xl lg:rounded-full bg-gray-100 p-4 flex flex-col lg:flex-row items-center text-center text-xs mt-4 lg:justify-between gap-4">
 		{/* Copyright Notice */}
 		<div className="flex w-fit">
 			&copy;{" "}

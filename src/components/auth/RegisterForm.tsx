@@ -1,13 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import React, { useTransition } from "react"
+import React from "react"
 import FormSection from "./FormSection"
 import z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
-import { toast } from "sonner"
-import { authClient } from "@/lib/auth-client"
 import {
 	Form,
 	FormControl,
@@ -17,14 +14,10 @@ import {
 	FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import config from "@/config"
 import { useForm } from "react-hook-form"
 import { useZustand } from "@/hooks/useZustand"
 import { FaEye, FaEyeSlash } from "react-icons/fa6"
-import {
-	createBankAccountAction,
-	createPreferenceAction,
-} from "@/server/action/userAction"
+import { RiLoader4Line } from "react-icons/ri"
 
 export const RegisterSchema = z.object({
 	firstName: z
@@ -40,10 +33,10 @@ export const RegisterSchema = z.object({
 })
 
 function FormComponent() {
-	const { setUser, getStartedEmail } = useZustand()
+	const { getStartedEmail } = useZustand()
 	const [viewPassword, setViewPassword] = React.useState(false)
 	const router = useRouter()
-	const [pending, startTransition] = useTransition()
+	const [pending, setPending] = React.useState(false)
 
 	const form = useForm<z.infer<typeof RegisterSchema>>({
 		resolver: zodResolver(RegisterSchema),
@@ -55,76 +48,19 @@ function FormComponent() {
 		},
 	})
 
-	const addRelationships = async (id: string) => {
-		const [bankResponse, prefResponse] = await Promise.all([
-			createBankAccountAction(id, {
-				accountType: "checking",
-				accountName: `${form.getValues().firstName} ${form.getValues().lastName}`,
-				bankName: "Bank of America",
-				accountNumber: undefined,
-			}),
-			createPreferenceAction(id),
-		])
-		if (!bankResponse.success || !prefResponse.success) {
-			toast.error(bankResponse.error || prefResponse.error, {
-				description: bankResponse.message || prefResponse.message,
-			})
-		} else {
-			// Simulate registration success
-			toast.success("Registration Successful", {
-				description:
-					"You have successfully registered a new account with us!",
-			})
-			router.push("/auth/account-ready") // Holding page while the account is prepared
-		}
-	}
-
 	const handleSubmit = async (data: z.infer<typeof RegisterSchema>) => {
-		// Handle registration logic here
-		try {
-			startTransition(async () => {
-				RegisterSchema.parse(data) // Validate data against the schema
-				// Simulate registration logic
-				await authClient.signUp.email(
-					{
-						hashedTransactionPin: "0000",
-						name: `${data.firstName} ${data.lastName}`,
-						email: data.email,
-						password: data.password,
-						callbackURL: `${config.BASE_URL}/dashboard`,
-					},
-					{
-						async onSuccess(context) {
-							setUser(context.data.user) // Assuming setUser is a function to set the user state
+		const parsed = RegisterSchema.safeParse(data)
 
-							await addRelationships(context.data.user.id)
+		if (!parsed.success) return
 
-							// Simulate registration success
-							toast.success("Registered Successfully", {
-																	description: `A verification email has been sent to your email: ${data.email}!`,
-								})
+		setPending(true)
 
-							router.push("/auth/account-ready") // Holding page while the account is prepared
-						},
-						onError(context) {
-							setUser(null) // Clear user state on error
-							toast.error(
-								context.error.name || "Authentication Error",
-								{
-									description:
-										context.error.message ||
-										"Authentication failed",
-								}
-							)
-						},
-					}
-				)
-			})
-		} catch (error: any) {
-			toast.error("Authentication Error", {
-				description: error.message || "Authentication failed",
-			})
-		}
+		// Simulate account creation before opening the holding page.
+		await new Promise((resolve) => setTimeout(resolve, 1400))
+
+		// Sign-up runs against local sample data, so there is no account to create
+		// in a database: the visitor goes straight to the holding page.
+		router.push("/auth/account-ready")
 	}
 
 	return (
@@ -233,11 +169,17 @@ function FormComponent() {
 				<div className="flex flex-col items-center w-full lg:col-span-2 gap-4">
 					<button
 						disabled={pending}
-						onClick={() => router.push("/auth/register")}
-						className="default-button mx-auto max-w-[260px] w-full"
+						className="default-button mx-auto max-w-[260px] w-full disabled:opacity-60 disabled:cursor-not-allowed"
 						type="submit"
 					>
-						Sign Up
+						{pending ? (
+							<span className="inline-flex items-center justify-center gap-2">
+								<RiLoader4Line className="h-4 w-4 animate-spin" />
+								Creating your account…
+							</span>
+						) : (
+							"Sign Up"
+						)}
 					</button>
 					<button
 						onClick={() => router.push("/auth/login")}

@@ -1,7 +1,5 @@
 "use client"
 
-import { useTransition } from "react"
-import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
@@ -18,15 +16,6 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Timezones } from "@/lib/timezones"
 import { formatDateTime } from "@/lib/format"
-import {
-	createPreferenceAction,
-	updatePreferenceAction,
-	updateUserAction,
-} from "@/server/action/userAction"
-import {
-	terminateAllOtherSessionsAction,
-	terminateSessionAction,
-} from "@/server/action/settingsAction"
 import type { Preference, Session } from "@/types/db"
 
 const currencies = ["USD", "EUR", "GBP", "NGN", "CAD"] as const
@@ -66,8 +55,7 @@ export default function SettingsForms({
 	sessions,
 	demo = false,
 }: SettingsFormsProps) {
-	const router = useRouter()
-	const [pending, startTransition] = useTransition()
+	const pending = false
 
 	const profileForm = useForm<ProfileValues>({
 		resolver: zodResolver(profileSchema),
@@ -85,86 +73,19 @@ export default function SettingsForms({
 		},
 	})
 
-	const saveProfile = (values: ProfileValues) => {
-		startTransition(async () => {
-			const result = await updateUserAction(userId, { name: values.name })
-
-			if (result.success) {
-				toast.success("Profile updated")
-				router.refresh()
-			} else {
-				toast.error(result.error || "Could not update profile", {
-					description: result.message,
-				})
-			}
+	// The exported build has no backend: these controls are disabled.
+	const notifyDemo = () =>
+		toast.info("Sample account", {
+			description: "Profile and preference changes are disabled in this demo.",
 		})
-	}
 
-	const savePreferences = (values: PreferenceValues) => {
-		startTransition(async () => {
-			if (!preference) {
-				const created = await createPreferenceAction(userId)
-
-				if (!created.success) {
-					toast.error(created.error || "Could not create preferences", {
-						description: created.message,
-					})
-					return
-				}
-			}
-
-			const result = await updatePreferenceAction(userId, {
-				currency: values.currency,
-				timezone: values.timezone,
-				hideBalances: values.hideBalances,
-			})
-
-			if (result.success) {
-				toast.success("Preferences saved")
-				router.refresh()
-			} else {
-				toast.error(result.error || "Could not save preferences", {
-					description: result.message,
-				})
-			}
-		})
-	}
-
-	const endSession = (sessionId: string) => {
-		startTransition(async () => {
-			const result = await terminateSessionAction(userId, sessionId)
-
-			if (result.success) {
-				toast.success("Session signed out")
-				router.refresh()
-			} else {
-				toast.error(result.error || "Could not end session")
-			}
-		})
-	}
-
-	const endOtherSessions = () => {
-		startTransition(async () => {
-			const result = await terminateAllOtherSessionsAction(userId, currentSessionId)
-
-			if (result.success) {
-				toast.success("Other sessions signed out", {
-					description: `${result.data?.count ?? 0} session(s) terminated.`,
-				})
-				router.refresh()
-			} else {
-				toast.error(result.error || "Could not end sessions")
-			}
-		})
-	}
+	const saveProfile = () => notifyDemo()
+	const savePreferences = () => notifyDemo()
+	const endSession = (_sessionId?: string) => notifyDemo()
+	const endOtherSessions = () => notifyDemo()
 
 	return (
 		<div className="space-y-8">
-			{demo && (
-				<p className="rounded-xl border-[0.5px] border-green-80/30 bg-green-80/5 px-6 py-4 text-xs text-gray-20">
-					Demo mode — these forms show sample values and cannot be saved.
-				</p>
-			)}
 			<section className="rounded-xl border-[0.5px] border-gray-70 bg-gray-90 p-6">
 				<div className="flex flex-col gap-1 pb-6">
 					<h2 className="text-lg font-semibold text-white">Profile</h2>

@@ -210,7 +210,31 @@
 	--sidebar-ring: oklch(0.556 0 0);
 }
 
+@keyframes chart-bar-rise {
+	from {
+		transform: translateY(10px);
+		opacity: 0.45;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
 @layer base {
+	/* Heights are inline; this only adds the entrance movement, so the chart
+	   is complete before (and without) hydration. */
+	.chart-bar {
+		transform-origin: bottom;
+		animation: chart-bar-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.chart-bar {
+			animation: none;
+		}
+	}
+
 	* {
 		@apply max-w-screen border-border outline-ring/50 scrollbar scrollbar-thumb-green-80 scrollbar-track-gray-70 scrollbar-thumb-rounded-full;
 	}

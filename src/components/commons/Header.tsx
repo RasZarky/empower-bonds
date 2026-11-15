@@ -20,9 +20,13 @@ import {
 } from "react-icons/ri"
 import { TbLogin2, TbMenu3 } from "react-icons/tb"
 import Logo from "./Logo"
+import NotificationsBell from "@/components/layout/NotificationsBell"
+import DashboardMoreMenu, {
+	dashboardMenuLinks,
+} from "@/components/layout/DashboardMoreMenu"
+import type { AppNotification } from "@/lib/notifications"
 import { Session } from "@/types/auth"
 import { authClient } from "@/lib/auth-client"
-import { endDemoSession } from "@/server/action/demoAction"
 import { useClickOutside } from "@/hooks/useClickOutside"
 import { Separator } from "../ui/separator"
 
@@ -33,12 +37,26 @@ interface NavLink {
 }
 
 // Navigation links configuration
-const navLinks: NavLink[] = [
+const marketingNavLinks: NavLink[] = [
 	{ href: "/", label: "Home" },
 	{ href: "/careers", label: "Careers" },
 	{ href: "/about", label: "About" },
 	{ href: "/security", label: "Security" },
 ]
+
+// The signed-in dashboard reuses this header instead of adding a second nav.
+const dashboardNavLinks: NavLink[] = [
+	{ href: "/dashboard", label: "Overview" },
+	{ href: "/dashboard/accounts", label: "Accounts" },
+	{ href: "/dashboard/transactions", label: "Transactions" },
+	{ href: "/dashboard/settings", label: "Settings" },
+]
+
+/** Exact match for `/` and `/dashboard`, prefix match for their sub-pages. */
+function isLinkActive(pathname: string, href: string): boolean {
+	if (href === "/" || href === "/dashboard") return pathname === href
+	return pathname === href || pathname.startsWith(`${href}/`)
+}
 
 const redirect_link = "/auth/login" // Redirect link after logout
 
@@ -46,6 +64,7 @@ const redirect_link = "/auth/login" // Redirect link after logout
 interface HeaderProps {
 	session: Session | null
 	demo?: boolean
+	notifications?: AppNotification[]
 }
 
 interface CursorPosition {
@@ -58,7 +77,11 @@ interface CursorPosition {
  * Header component with responsive navigation, scroll-based behavior,
  * and user authentication controls.
  */
-const Header: React.FC<HeaderProps> = ({ session, demo = false }) => {
+const Header: React.FC<HeaderProps> = ({
+	session,
+	demo = false,
+	notifications = [],
+}) => {
 	const { scrollY } = useScroll()
 	const pathname = usePathname()
 	const router = useRouter()
@@ -71,6 +94,9 @@ const Header: React.FC<HeaderProps> = ({ session, demo = false }) => {
 	// Refs for click outside detection
 	const mobileMenuRef = useRef<HTMLDivElement>(null)
 	const profileMenuRef = useRef<HTMLDivElement>(null)
+
+	const isDashboard = pathname.startsWith("/dashboard")
+	const navLinks = isDashboard ? dashboardNavLinks : marketingNavLinks
 
 	// Thresholds for scroll behavior
 	const FIXED_THRESHOLD = 90
@@ -155,10 +181,18 @@ const Header: React.FC<HeaderProps> = ({ session, demo = false }) => {
 					pathname={pathname}
 				/>
 
+				{/* Dashboard-only tools */}
+				{isDashboard && (
+					<div className="hidden lg:flex items-center gap-2">
+						<NotificationsBell items={notifications} />
+						<DashboardMoreMenu />
+					</div>
+				)}
+
 				{/* Authentication/Profile Controls */}
 				<AuthControls
 					session={session}
-					demo={demo}
+					demo={demo || isDashboard}
 					// @ts-expect-error not null assertion
 					profileMenuRef={profileMenuRef}
 					isProfileMenuOpen={isProfileMenuOpen}
@@ -179,7 +213,7 @@ const Header: React.FC<HeaderProps> = ({ session, demo = false }) => {
 				navLinks={navLinks}
 				pathname={pathname}
 				session={session}
-				demo={demo}
+				demo={demo || isDashboard}
 				handleLogout={handleLogout}
 			/>
 		</motion.header>
@@ -293,8 +327,8 @@ const DesktopNavigation: React.FC<{
 		<nav
 			onMouseLeave={() => {
 				// Find the active link's position to snap back to it on mouse leave
-				const activeLink = navLinks.find(
-					(link) => link.href === pathname
+				const activeLink = navLinks.find((link) =>
+					isLinkActive(pathname, link.href)
 				)
 
 				if (activeLink) {
@@ -314,7 +348,7 @@ const DesktopNavigation: React.FC<{
 			<NavCursor position={cursorPosition} />
 
 			{navLinks.map((link) => {
-				const isActive = pathname === link.href
+				const isActive = isLinkActive(pathname, link.href)
 				return (
 					<NavTab
 						key={link.href}
@@ -398,19 +432,12 @@ const AuthControls: React.FC<{
 				)}
 			</div>
 		) : demo ? (
-			<div className="flex items-center gap-3">
-				<span className="rounded-full border-[0.5px] border-green-80/40 px-3 py-1 text-xs text-green-80">
-					Demo mode
-				</span>
-				<form action={endDemoSession}>
-					<button
-						type="submit"
-						className="text-white hover:text-green-80 transition-colors duration-300 cursor-pointer"
-					>
-						Exit demo
-					</button>
-				</form>
-			</div>
+			<Link
+				href="/"
+				className="text-white hover:text-green-80 transition-colors duration-300"
+			>
+				Sign out
+			</Link>
 		) : (
 			<>
 				<Link
@@ -485,14 +512,18 @@ const MobileMenu: React.FC<{
 			</button>
 		</div>
 		<nav className="center relative z-0 flex flex-col justify-between h-full p-4 pt-16 space-y-4 text-base font-medium">
-			<div className="flex flex-col items-center space-y-4 pt-[55%]">
+			<div
+				className={`flex flex-col items-center space-y-4 overflow-y-auto ${
+					pathname.startsWith("/dashboard") ? "pt-24" : "pt-[55%]"
+				}`}
+			>
 				{navLinks.map((link) => (
 					<Link
 						key={link.href}
 						href={link.href}
 						onClick={() => setIsMobileMenuOpen(false)}
 						className={`transition-colors duration-300 cursor-pointer ${
-							pathname === link.href
+							isLinkActive(pathname, link.href)
 								? "text-green-80"
 								: "text-gray-20 cursor-pointer hover:text-green-80"
 						}`}
@@ -500,6 +531,22 @@ const MobileMenu: React.FC<{
 						{link.label}
 					</Link>
 				))}
+
+				{pathname.startsWith("/dashboard") &&
+					dashboardMenuLinks.map((link) => (
+						<Link
+							key={link.href}
+							href={link.href}
+							onClick={() => setIsMobileMenuOpen(false)}
+							className={`transition-colors duration-300 cursor-pointer ${
+								isLinkActive(pathname, link.href)
+									? "text-green-80"
+									: "text-gray-20 hover:text-green-80"
+							}`}
+						>
+							{link.label}
+						</Link>
+					))}
 			</div>
 
 			<Separator className="w-full h-px bg-gray-60" />
@@ -536,15 +583,13 @@ const MobileMenu: React.FC<{
 						</button>
 					</>
 				) : demo ? (
-					<form action={endDemoSession}>
-						<button
-							type="submit"
-							className="flex items-center text-green-80 hover:text-green-70 transition-colors duration-300"
-						>
-							<RiLogoutBoxLine className="mr-2 h-4 w-4" />
-							Exit demo
-						</button>
-					</form>
+					<Link
+						href="/"
+						className="flex items-center text-green-80 hover:text-green-70 transition-colors duration-300"
+					>
+						<RiLogoutBoxLine className="mr-2 h-4 w-4" />
+						Sign out
+					</Link>
 				) : (
 					<>
 						<Link

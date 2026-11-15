@@ -61,7 +61,7 @@ const features = [
 		for: "Customer Support",
 		title: "24/7 Customer Service",
 		description:
-			"Our dedicated customer support team is available around the clock to assist you with any questions or concerns. Reach out via phone, email, or live chat for prompt assistance.",
+			"Our dedicated customer support team is available around the clock to assist you with any questions or concerns. Reach out by email for prompt assistance.",
 	},
 	{
 		for: "Customer Support",

@@ -88,11 +88,66 @@ This project is based on the Figma design by Pragadesh, available in the communi
 
     Open [http://localhost:3000](http://localhost:3000) to view the app.
 
+## Deploying to Firebase Hosting
+
+This project builds as a **static export**: `next.config.ts` sets `output: "export"`, so `next build` writes plain HTML, CSS, JS and assets to `out/`, and `firebase.json` publishes that folder from Firebase Hosting. The deployed site is the demo UI only — there is no server runtime, no API routes and no database connection. It works on the free Spark plan.
+
+What works on the deployed site:
+
+- Every marketing page (home, about, careers, security, privacy policy, terms of service).
+- The sample dashboard under `/dashboard` (accounts, transactions, cards, statements, security, settings, support) using the local demo ledger for Gloria Morgan.
+- Login accepts `gloria.morgan@gmail.com` / `Morgan2026!` and opens the dashboard in the browser; any other credentials show an authentication error.
+- Sign Up goes to the "Getting your account ready" holding page.
+- The currency converter uses fixed sample rates instead of a live API.
+
+What is intentionally unavailable: real authentication, database-backed accounts, emails, and transfers (the secret code always returns "Wrong password").
+
+### 1. Build the static site
+
+```sh
+pnpm build
+# or: npm run build
+```
+
+The build must succeed with no server running; the output is written to `out/`.
+
+### 2. Preview it locally
+
+```sh
+npx serve out
+# or, with the Firebase emulator:
+npx firebase-tools emulators:start --only hosting
+```
+
+Open the URL it prints and check `/` and `/dashboard/` (the dashboard is a prerendered page — no sign-in cookie is required).
+
+### 3. Deploy
+
+```sh
+npm install -g firebase-tools   # once
+firebase login
+firebase use --add              # pick your Firebase project
+firebase deploy --only hosting
+# or the package script (uses npx firebase-tools):
+pnpm deploy
+```
+
+`firebase.json` publishes `out/` with `cleanUrls` and `trailingSlash`, so `/dashboard/`, `/auth/login/` and the rest resolve to their prerendered `index.html` files. Firebase serves `out/404.html` for unknown paths.
+
+### 4. Custom domain (optional)
+
+Firebase console → **Hosting → Add custom domain**, then follow the DNS instructions. No rebuild is needed because the site is fully static.
+
+### Notes
+
+- `firebase.json` only contains a `hosting` block. There is no App Hosting backend and no Cloud Functions.
+- If you later want the real backend (auth, Postgres, Redis, emails), revert `output: "export"` and deploy with Firebase App Hosting or another Node host.
+
 ## Configuration
 
 Empower Bonds relies on environment variables for configuration. Below are the core variables defined in `.env.example`:
 
-- **Application Title**: `TITLE=Empower Bonds`
+- **Application Title**: `TITLE=Empower Bonds` and `NEXT_PUBLIC_TITLE=Empower Bonds` — set both to the same value. `TITLE` is read on the server; `NEXT_PUBLIC_TITLE` is what the client-rendered sections (hero, testimonials, logo) read, because non-public variables are not available in the browser bundle.
 - **Telegram Configuration** (optional): `TG_TOKEN`, `TG_ADMIN`
 - **Cloudinary Configuration** (for image uploads): `NEXT_PUBLIC_CLOUDINARY_NAME`, `NEXT_PUBLIC_CLOUDINARY_API`, `NEXT_PUBLIC_CLOUDINARY_SECRET`
 - **Authentication Configuration**: `BETTER_AUTH_SECRET`, `NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000`
@@ -105,6 +160,17 @@ Empower Bonds relies on environment variables for configuration. Below are the c
 **Note**: Keep sensitive values (e.g., `BETTER_AUTH_SECRET`, API keys) secret and exclude `.env.local` from version control (add to `.gitignore`).
 
 ## Usage
+
+### Demo sign-in
+
+The login form is pre-filled with the sample account credentials:
+
+| Field    | Value                    |
+| -------- | ------------------------ |
+| Email    | `gloria.morgan@gmail.com` |
+| Password | `Morgan2026!`            |
+
+Signing in with these opens the sample dashboard, which is backed by local demo data (accounts, transactions, cards, statements and settings are read-only). The credentials live in `src/lib/demo-credentials.ts` and are public demo values — change or remove them before using this project for real accounts.
 
 - Navigate to the Home, About, Career, and Security pages via the navigation menu.
 - Access authentication pages (e.g., `/login`, `/register`) to test registration, login, password reset, and email verification.

@@ -84,8 +84,8 @@ const faqs = [
 			<span>
 				Report a lost or stolen debit card immediately. You can do this
 				by <b>logging into your online account</b> and selecting the
-				'Report Lost/Stolen Card' option, or by calling our{" "}
-				<b>24/7 support line</b> at [Insert Phone Number Here]. We will
+				'Report Lost/Stolen Card' option, or by emailing our support team at
+				<b>support@empowerbonds.com</b>. We will
 				immediately cancel your existing card and arrange for a
 				replacement card to be sent to you.
 			</span>
@@ -211,8 +211,8 @@ const faqs = [
 				If you see an unfamiliar or unauthorized charge, log into your
 				online account and navigate to the <b>'Transaction History'</b>{" "}
 				page. Select the disputed transaction and click{" "}
-				<b>'Dispute this Charge.'</b> Alternatively, call our fraud
-				department immediately. We will launch an investigation and
+				<b>'Dispute this Charge.'</b> Alternatively, email our fraud team
+				at <b>support@empowerbonds.com</b> immediately. We will launch an investigation and
 				provide provisional credit where applicable.
 			</span>
 		),

@@ -5,10 +5,9 @@ import config from "@/config"
 import { createMetadata } from "@/lib/metadata"
 import { Toaster } from "sonner"
 import Footer from "@/components/commons/Footer"
-import { auth } from "@/lib/auth"
-import { cookies, headers } from "next/headers"
-import { DEMO_COOKIE } from "@/lib/demo-cookie"
 import Header from "@/components/commons/Header"
+import { buildNotifications } from "@/lib/notifications"
+import { DEMO_TRANSACTIONS, DEMO_USER } from "@/lib/demo"
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -38,25 +37,24 @@ export const metadata: Metadata = createMetadata({
 	metadataBase: new URL(config.BASE_URL),
 })
 
-export default async function RootLayout({
+export default function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode
 }>) {
-	const isDemo = (await cookies()).get(DEMO_COOKIE)?.value === "1"
-
-	const session = isDemo
-		? null
-		: await auth.api.getSession({
-				headers: await headers(),
-		  })
+	// The exported site is the sample account only, so the bell always shows
+	// ledger activity from the demo data.
+	const notifications = buildNotifications({
+		name: DEMO_USER.name,
+		transactions: DEMO_TRANSACTIONS,
+	})
 
 	return (
 		<html lang="en">
 			<body
 				className={`relative ${geistSans.variable} ${geistMono.variable} ${lexend.variable} antialiased text-gray-20 font-medium`}
 			>
-				<Header session={session} demo={isDemo} />
+				<Header session={null} notifications={notifications} />
 
 				<main className="px-6 space-y-16 flex flex-col w-screen">
 					{children}

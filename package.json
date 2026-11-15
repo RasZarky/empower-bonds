@@ -9,7 +9,8 @@
   "packageManager": "pnpm@10.18.1",
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "build": "next build",
+    "deploy": "npx firebase-tools deploy --only hosting",
     "push": "pnpm drizzle-kit push",
     "studio": "pnpm drizzle-kit studio",
     "better-auth-generate": "pnpm dlx @better-auth/cli generate",

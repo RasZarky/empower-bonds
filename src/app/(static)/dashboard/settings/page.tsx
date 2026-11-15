@@ -1,39 +1,13 @@
-import { redirect } from "next/navigation"
-import { getDashboardViewer } from "@/lib/dashboard-session"
-import { getUserProfileDataAction } from "@/server/action/userAction"
-import { getActiveSessionsAction } from "@/server/action/settingsAction"
+// Profile, preferences and signed-in devices.
 import { DEMO_PREFERENCE, DEMO_SESSIONS, DEMO_USER } from "@/lib/demo"
 import type { Preference, Session } from "@/types/db"
 import SettingsForms from "@/components/dashboard/SettingsForms"
 
-export default async function SettingsPage() {
-	const viewer = await getDashboardViewer()
-
-	if (!viewer) {
-		redirect("/auth/login?redirect=/dashboard/settings")
-	}
-
-	let name: string
-	let email: string
-	let preference: Preference | null
-	let sessions: Session[]
-
-	if (viewer.demo) {
-		name = DEMO_USER.name
-		email = DEMO_USER.email
-		preference = DEMO_PREFERENCE
-		sessions = DEMO_SESSIONS
-	} else {
-		const [profileResult, sessionsResult] = await Promise.all([
-			getUserProfileDataAction(viewer.userId),
-			getActiveSessionsAction(viewer.userId, viewer.sessionId),
-		])
-
-		name = profileResult.data?.name || viewer.name || ""
-		email = profileResult.data?.email || viewer.email
-		preference = profileResult.data?.preferences ?? null
-		sessions = sessionsResult.data ?? []
-	}
+export default function SettingsPage() {
+	const name = DEMO_USER.name
+	const email = DEMO_USER.email
+	const preference: Preference | null = DEMO_PREFERENCE
+	const sessions: Session[] = DEMO_SESSIONS
 
 	return (
 		<>
@@ -48,13 +22,13 @@ export default async function SettingsPage() {
 			</header>
 
 			<SettingsForms
-				userId={viewer.userId}
-				currentSessionId={viewer.demo ? "" : viewer.sessionId}
+				userId={DEMO_USER.id}
+				currentSessionId=""
 				name={name}
 				email={email}
 				preference={preference}
 				sessions={sessions}
-				demo={viewer.demo}
+				demo
 			/>
 		</>
 	)

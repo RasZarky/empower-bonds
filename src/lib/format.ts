@@ -45,6 +45,27 @@ export function maskAccountNumber(accountNumber: string | null | undefined): str
 	return `•••• ${accountNumber.slice(-4)}`
 }
 
+/** Short "2h ago" style label for activity feeds. */
+export function formatRelative(value: Date | string | null | undefined): string {
+	if (!value) return "—"
+
+	const date = new Date(value)
+	const seconds = Math.round((Date.now() - date.getTime()) / 1000)
+
+	if (seconds < 60) return "Just now"
+
+	const minutes = Math.round(seconds / 60)
+	if (minutes < 60) return `${minutes}m ago`
+
+	const hours = Math.round(minutes / 60)
+	if (hours < 24) return `${hours}h ago`
+
+	const days = Math.round(hours / 24)
+	if (days < 7) return `${days}d ago`
+
+	return formatDate(date)
+}
+
 /** Groups accounts by currency and sums their balances. */
 export function sumBalancesByCurrency(
 	accounts: { balance: string; currency: string }[]
