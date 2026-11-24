@@ -142,13 +142,18 @@ const ONE_OFFS: {
 	{ monthsAgo: 2, day: 11, account: "checking", amount: 7_800, type: "purchase", direction: "out", description: "Travel — Lisbon" },
 	{ monthsAgo: 2, day: 27, account: "checking", amount: 5_000, type: "withdrawal", direction: "out", description: "Charity donation" },
 	{ monthsAgo: 1, day: 8, account: "checking", amount: 6_400, type: "deposit", direction: "in", description: "Tax refund" },
+	// Money sent in by other people: three payers, all on the 23rd of this month,
+	// 99,634.75 in total. These are inflows, so they raise the balance.
+	{ monthsAgo: 0, day: 23, account: "checking", amount: 43_140, type: "deposit", direction: "in", description: "Wire in — Daniel Whitaker" },
+	{ monthsAgo: 0, day: 23, account: "checking", amount: 32_675.5, type: "deposit", direction: "in", description: "Payment from Emily Carter — invoice 2184" },
+	{ monthsAgo: 0, day: 23, account: "checking", amount: 23_819.25, type: "deposit", direction: "in", description: "Zelle from Marcus Bell" },
 	{ monthsAgo: 1, day: 19, account: "euro", amount: 2_100, type: "withdrawal", direction: "out", description: "Brussels rent" },
 	{ monthsAgo: 1, day: 21, account: "euro", amount: 3_400, type: "deposit", direction: "in", description: "Client payment — EUR" },
 	{ monthsAgo: 0, day: 2, account: "euro", amount: 480, type: "purchase", direction: "out", description: "Hotel — Brussels" },
 ] satisfies OneOffSeed[]
 
 const RECENT: { days: number; account: AccountKey; amount: number; type: TransactionTypeEnum; direction: "in" | "out"; description: string; status?: TransactionStatusEnum }[] = [
-	{ days: 0, account: "checking", amount: 68.4, type: "purchase", direction: "out", description: "Coffee & lunch", status: "pending" },
+	// Nothing is dated later than yesterday, so the demo never shows future activity.
 	{ days: 1, account: "checking", amount: 1_290, type: "purchase", direction: "out", description: "Apple Store — MacBook" },
 	{ days: 2, account: "checking", amount: 240.5, type: "purchase", direction: "out", description: "Groceries — Trader Joe's" },
 ]

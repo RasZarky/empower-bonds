@@ -82,40 +82,33 @@ export default function StatementsPanel({
 							</div>
 						</div>
 
-						<div className="grid grid-cols-4 gap-3 lg:contents">
-							<div className="flex flex-col lg:items-end">
-								<span className="text-[9px] uppercase tracking-[0.15em] text-gray-30 lg:hidden">
-									Opening
-								</span>
-								<span className="text-xs text-gray-20">
+						{/* On small screens the four figures stack as label/value rows instead of a cramped 4-up grid. */}
+						<dl className="flex flex-col gap-2 border-t border-gray-70/60 pt-4 lg:contents">
+							<div className="flex items-baseline justify-between gap-4 lg:flex-col lg:items-end lg:gap-0.5">
+								<dt className="text-[10px] uppercase tracking-[0.15em] text-gray-30 lg:hidden">Opening</dt>
+								<dd className="text-xs text-gray-20">
 									{formatCurrency(statement.opening, currency)}
-								</span>
+								</dd>
 							</div>
-							<div className="flex flex-col lg:items-end">
-								<span className="text-[9px] uppercase tracking-[0.15em] text-gray-30 lg:hidden">
-									In
-								</span>
-								<span className="text-xs text-green-80">
+							<div className="flex items-baseline justify-between gap-4 lg:flex-col lg:items-end lg:gap-0.5">
+								<dt className="text-[10px] uppercase tracking-[0.15em] text-gray-30 lg:hidden">In</dt>
+								<dd className="text-xs text-green-80">
 									+{formatCurrency(statement.inflow, currency)}
-								</span>
+								</dd>
 							</div>
-							<div className="flex flex-col lg:items-end">
-								<span className="text-[9px] uppercase tracking-[0.15em] text-gray-30 lg:hidden">
-									Out
-								</span>
-								<span className="text-xs text-gray-20">
+							<div className="flex items-baseline justify-between gap-4 lg:flex-col lg:items-end lg:gap-0.5">
+								<dt className="text-[10px] uppercase tracking-[0.15em] text-gray-30 lg:hidden">Out</dt>
+								<dd className="text-xs text-gray-20">
 									−{formatCurrency(statement.outflow, currency)}
-								</span>
+								</dd>
 							</div>
-							<div className="flex flex-col lg:items-end">
-								<span className="text-[9px] uppercase tracking-[0.15em] text-gray-30 lg:hidden">
-									Closing
-								</span>
-								<span className="text-xs font-semibold text-white">
+							<div className="flex items-baseline justify-between gap-4 lg:flex-col lg:items-end lg:gap-0.5">
+								<dt className="text-[10px] uppercase tracking-[0.15em] text-gray-30 lg:hidden">Closing</dt>
+								<dd className="text-xs font-semibold text-white">
 									{formatCurrency(statement.closing, currency)}
-								</span>
+								</dd>
 							</div>
-						</div>
+						</dl>
 
 						<div className="flex items-center justify-between gap-3 lg:justify-end">
 							<span

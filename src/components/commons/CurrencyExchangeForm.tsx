@@ -6,44 +6,21 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { motion, AnimatePresence } from "framer-motion"
 import { Currency, currencyOptions } from "@/lib/shared/currenciesData"
-
-// Static USD-base rates so the converter works on the exported demo site,
-// where there is no server to call an exchange-rate API.
-const DEMO_USD_RATES: Record<string, number> = {
-	USD: 1,
-	EUR: 1.08,
-	GBP: 1.27,
-	CAD: 0.74,
-	AUD: 0.66,
-	NGN: 0.00065,
-	JPY: 0.0065,
-	CNY: 0.14,
-	INR: 0.012,
-	ZAR: 0.055,
-	KES: 0.0078,
-	GHS: 0.066,
-	BTC: 68000,
-	ETH: 3200,
-	USDT: 1,
-	BNB: 600,
-	SOL: 150,
-	XRP: 0.6,
-	ADA: 0.5,
-	DOGE: 0.16,
-}
+import { convertAmount, type RateTable } from "@/lib/rates"
+import { useExchangeRates } from "@/hooks/useExchangeRates"
 
 function convertCurrency({
 	amount,
 	fromCurrency,
 	toCurrency,
+	rates,
 }: {
 	amount: number
 	fromCurrency: string
 	toCurrency: string
+	rates: RateTable
 }): { success: boolean; convertedAmount?: number; error?: string } {
-	const from = DEMO_USD_RATES[fromCurrency] ?? 1
-	const to = DEMO_USD_RATES[toCurrency] ?? 1
-	return { success: true, convertedAmount: (amount * from) / to }
+	return { success: true, convertedAmount: convertAmount(amount, fromCurrency, toCurrency, rates) }
 }
 
 // Zod schema for form validation
@@ -173,6 +150,7 @@ const CurrencyExchangeForm: React.FC = () => {
 	const [convertedAmount, setConvertedAmount] = useState<number | undefined>()
 	const [isLoading, setIsLoading] = useState(false)
 	const [errorMessage, setErrorMessage] = useState<string | null>(null)
+	const { rates } = useExchangeRates()
 
 	const {
 		control,
@@ -196,6 +174,7 @@ const CurrencyExchangeForm: React.FC = () => {
 			amount: data.amount,
 			fromCurrency: data.fromCurrency,
 			toCurrency: data.toCurrency,
+			rates,
 		})
 
 		if (result.success) {

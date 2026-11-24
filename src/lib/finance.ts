@@ -39,13 +39,20 @@ export interface TransactionSummary {
 	savingsRate: number | null
 }
 
-export function summarizeTransactions(transactions: Transaction[]): TransactionSummary {
+/**
+ * `rate` converts a transaction's amount into the currency being displayed, so
+ * a mixed-currency ledger still produces one meaningful total.
+ */
+export function summarizeTransactions(
+	transactions: Transaction[],
+	rate: (transaction: Transaction) => number = () => 1
+): TransactionSummary {
 	let income = 0
 	let expenses = 0
 
 	for (const transaction of transactions) {
 		if (isTransfer(transaction)) continue
-		const amount = transactionAmount(transaction)
+		const amount = transactionAmount(transaction) * rate(transaction)
 
 		if (isIncome(transaction)) income += amount
 		else expenses += amount
@@ -78,7 +85,8 @@ export interface CashFlowBucket {
 /** Income and expenses per calendar month, oldest bucket first. */
 export function monthlyCashFlow(
 	transactions: Transaction[],
-	months: number = 6
+	months: number = 6,
+	rate: (transaction: Transaction) => number = () => 1
 ): CashFlowBucket[] {
 	const now = new Date()
 	const buckets: CashFlowBucket[] = []
@@ -102,7 +110,7 @@ export function monthlyCashFlow(
 		const bucket = byMonth.get(`${date.getFullYear()}-${date.getMonth()}`)
 		if (!bucket) continue
 
-		const amount = transactionAmount(transaction)
+		const amount = transactionAmount(transaction) * rate(transaction)
 		if (isIncome(transaction)) bucket.income += amount
 		else bucket.expenses += amount
 	}

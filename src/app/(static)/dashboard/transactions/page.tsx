@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { filterDemoTransactions } from "@/lib/demo"
+import { DEMO_ACCOUNTS, filterDemoTransactions } from "@/lib/demo"
 import type { Transaction, TransactionStatusEnum, TransactionTypeEnum } from "@/types/db"
 import {
 	isTransfer,
@@ -11,6 +11,8 @@ import {
 	transactionDirection,
 } from "@/lib/finance"
 import { formatCurrency, formatDateTime } from "@/lib/format"
+import { convertAmount } from "@/lib/rates"
+import { useExchangeRates } from "@/hooks/useExchangeRates"
 import ExportTransactions from "@/components/dashboard/ExportTransactions"
 
 const transactionTypes = [
@@ -46,6 +48,7 @@ export default function TransactionsPage() {
 	const [typeFilter, setTypeFilter] = useState("")
 	const [statusFilter, setStatusFilter] = useState("")
 	const [searchFilter, setSearchFilter] = useState("")
+	const { rates } = useExchangeRates()
 
 	const type = transactionTypes.includes(typeFilter as (typeof transactionTypes)[number])
 		? (typeFilter as TransactionTypeEnum)
@@ -60,7 +63,22 @@ export default function TransactionsPage() {
 	const transactions: Transaction[] = filterDemoTransactions({ type, status, search })
 	const loadError: string | undefined = undefined
 	const hasFilters = Boolean(type || status || search)
-	const pageSummary = summarizeTransactions(transactions)
+
+	// Amounts are entered in each account's own currency, so the summary cards
+	// convert foreign rows into the primary currency to keep one total.
+	const primaryCurrency =
+		DEMO_ACCOUNTS.find((account) => account.isPrimary)?.currency ?? "USD"
+	const currencyByAccount = new Map(
+		DEMO_ACCOUNTS.map((account) => [account.id, account.currency])
+	)
+	const pageSummary = summarizeTransactions(transactions, (transaction) =>
+		convertAmount(
+			1,
+			currencyByAccount.get(transaction.accountId) ?? primaryCurrency,
+			primaryCurrency,
+			rates
+		)
+	)
 
 	const resetFilters = () => {
 		setTypeFilter("")
@@ -148,13 +166,13 @@ export default function TransactionsPage() {
 				<div className="rounded-xl border-[0.5px] border-gray-70 bg-gray-90 p-6 flex flex-col gap-1">
 					<span className="text-[10px] uppercase tracking-[0.2em] text-gray-30">Money in</span>
 					<span className="text-lg font-semibold text-green-80">
-						{formatCurrency(pageSummary.income)}
+						{formatCurrency(pageSummary.income, primaryCurrency)}
 					</span>
 				</div>
 				<div className="rounded-xl border-[0.5px] border-gray-70 bg-gray-90 p-6 flex flex-col gap-1">
 					<span className="text-[10px] uppercase tracking-[0.2em] text-gray-30">Money out</span>
 					<span className="text-lg font-semibold text-white">
-						{formatCurrency(pageSummary.expenses)}
+						{formatCurrency(pageSummary.expenses, primaryCurrency)}
 					</span>
 				</div>
 				<div className="rounded-xl border-[0.5px] border-gray-70 bg-gray-90 p-6 flex flex-col gap-1">
@@ -165,7 +183,7 @@ export default function TransactionsPage() {
 						}`}
 					>
 						{pageSummary.net >= 0 ? "+" : "−"}
-						{formatCurrency(Math.abs(pageSummary.net))}
+						{formatCurrency(Math.abs(pageSummary.net), primaryCurrency)}
 					</span>
 				</div>
 			</div>
@@ -229,7 +247,10 @@ export default function TransactionsPage() {
 												: transactionDirection(transaction) === "in"
 													? "+"
 													: "−"}
-											{formatCurrency(transactionAmount(transaction))}
+											{formatCurrency(
+												transactionAmount(transaction),
+												currencyByAccount.get(transaction.accountId) ?? primaryCurrency
+											)}
 										</td>
 									</tr>
 								))}

@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import {
 	RiArrowRightLine,
@@ -24,6 +26,8 @@ import {
 	withinDays,
 } from "@/lib/finance"
 import { formatCurrency, formatDate, maskAccountNumber } from "@/lib/format"
+import { convertAmount } from "@/lib/rates"
+import { useExchangeRates } from "@/hooks/useExchangeRates"
 import StatCard from "@/components/dashboard/StatCard"
 import CashFlowChart from "@/components/dashboard/CashFlowChart"
 import TransferDialog from "@/components/dashboard/TransferDialog"
@@ -42,6 +46,7 @@ export default function DashboardOverviewPage() {
 	const accounts: BankAccount[] = DEMO_ACCOUNTS
 	const transactions: Transaction[] = DEMO_TRANSACTIONS
 	const hideBalances = DEMO_PREFERENCE.hideBalances
+	const { rates, live: liveRates, updatedAt } = useExchangeRates()
 
 	const lastLogin: Date | null = demoLastSignIn()
 
@@ -54,13 +59,28 @@ export default function DashboardOverviewPage() {
 
 	const primaryAccount = accounts.find((account) => account.isPrimary) ?? accounts[0]
 	const primaryCurrency = primaryAccount?.currency ?? "USD"
-	const portfolio = totalByCurrency[primaryCurrency] ?? 0
+	const currencyByAccount = new Map(accounts.map((account) => [account.id, account.currency]))
+
+	// The headline total covers every account, so foreign-currency balances are
+	// converted into the primary currency instead of being dropped from it.
+	const portfolio = Object.entries(totalByCurrency).reduce(
+		(total, [currency, amount]) =>
+			total + convertAmount(amount, currency, primaryCurrency, rates),
+		0
+	)
 	const otherCurrencies = Object.entries(totalByCurrency).filter(
 		([currency]) => currency !== primaryCurrency
 	)
+	const rateForDisplay = (transaction: Transaction) =>
+		convertAmount(
+			1,
+			currencyByAccount.get(transaction.accountId) ?? primaryCurrency,
+			primaryCurrency,
+			rates
+		)
 
-	const last30 = summarizeTransactions(withinDays(transactions, 30))
-	const cashFlow = monthlyCashFlow(transactions, 12)
+	const last30 = summarizeTransactions(withinDays(transactions, 30), rateForDisplay)
+	const cashFlow = monthlyCashFlow(transactions, 12, rateForDisplay)
 	const recent = transactions.slice(0, 8)
 	const firstName = DEMO_USER.name.split(" ")[0]
 
@@ -87,6 +107,14 @@ export default function DashboardOverviewPage() {
 						<span className="text-3xl md:text-4xl font-semibold text-green-80 break-words">
 							{hideBalances ? "••••••" : formatCurrency(portfolio, primaryCurrency)}
 						</span>
+						{otherCurrencies.length > 0 && (
+							<span className="text-xs text-gray-30">
+								All accounts, with{" "}
+								{otherCurrencies.map(([currency]) => currency).join(" and ")} converted into{" "}
+								{primaryCurrency} at {liveRates ? "live rates" : "demo exchange rates"}
+								{liveRates && updatedAt ? ` · updated ${formatDate(updatedAt)}` : ""}.
+							</span>
+						)}
 						<span
 							className={`flex w-fit items-center gap-1 rounded-full border-[0.5px] px-2 py-1 text-[10px] ${
 								last30.net >= 0
@@ -329,7 +357,10 @@ export default function DashboardOverviewPage() {
 												}`}
 											>
 												{transfer ? "" : incoming ? "+" : isIncome(transaction) ? "+" : "−"}
-												{formatCurrency(transactionAmount(transaction), primaryCurrency)}
+												{formatCurrency(
+													transactionAmount(transaction),
+													currencyByAccount.get(transaction.accountId) ?? primaryCurrency
+												)}
 											</td>
 										</tr>
 									)

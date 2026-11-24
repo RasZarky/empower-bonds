@@ -7,13 +7,14 @@ There is no server runtime, no API routes, no database and no real authenticatio
 ## What works
 
 - **Marketing pages** — home, about, careers, security, privacy policy, terms of service.
-- **Sample dashboard** — overview, accounts, transactions (client-side search/filter), cards, statements, security, settings, support, all backed by local demo data for the account holder *Gloria Morgan* (total balance `$2,584,913.27`, 12-month cash-flow chart).
+- **Sample dashboard** — overview, accounts, transactions (client-side search/filter), cards, statements, security, settings, support, all backed by local demo data for the account holder *Gloria Morgan* (total balance `$2,684,305.72`, 12-month cash-flow chart).
 - **Demo sign-in** — the form accepts the sample credentials below and opens `/dashboard`. Anything else shows an authentication error.
 - **Sign up** — goes to the "Getting your account ready" holding page.
 - **Loading states** — the dashboard shows a skeleton for ~900 ms per route, sign-in for ~1.2 s, sign-up for ~1.4 s, so the demo feels like a real application.
-- **Local interactions** — card freeze, notification read state, settings and account controls update in the browser only; the currency converter uses fixed sample rates; transfers always reject the secret code with "Wrong password".
+- **Local interactions** — card freeze, notification read state, settings and account controls update in the browser only; transfers always reject the secret code with "Wrong password".
+- **Exchange rates** — the currency converter and the dashboard's converted totals ask the keyless `open.er-api.com` feed for today's rates on page load and fall back to the bundled table in `src/lib/rates.ts` when the request fails.
 
-Intentionally unavailable: real authentication, database-backed accounts, emails, payments, live exchange rates.
+Intentionally unavailable: real authentication, database-backed accounts, emails, payments.
 
 ## Tech stack
 
@@ -139,7 +140,7 @@ The demo build works without any of these. They are documented for reference in 
 | `DATABASE_URL` | PostgreSQL connection for Drizzle (unused) |
 | `REDIS_URL` | Redis URL for session/cache (unused) |
 | `RESEND_API_KEY`, `NEXT_PUBLIC_FROM_EMAIL` | Transactional email (unused) |
-| `EXCHANGERATE_KEY`, `COINLAYER_KEY` | Live FX/crypto rates; the demo uses fixed rates |
+| `EXCHANGERATE_KEY`, `COINLAYER_KEY` | Server-side FX/crypto rates (`src/server/currencyExchangeRates.ts`, unused in the export); client pages use the keyless feed plus bundled fallbacks |
 | `NEXT_PUBLIC_CLOUDINARY_*` | Image upload hosting |
 | `TG_TOKEN`, `TG_ADMIN` | Telegram notifications (optional) |
 | `TRUSTED_ORIGINS`, `NEXT_PUBLIC_COMPLAINTS_EMAIL` | Origin allow-list and support address |
