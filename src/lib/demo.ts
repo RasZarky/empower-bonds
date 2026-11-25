@@ -153,7 +153,8 @@ const ONE_OFFS: {
 ] satisfies OneOffSeed[]
 
 const RECENT: { days: number; account: AccountKey; amount: number; type: TransactionTypeEnum; direction: "in" | "out"; description: string; status?: TransactionStatusEnum }[] = [
-	// Nothing is dated later than yesterday, so the demo never shows future activity.
+	// `days: 0` is today; nothing is dated later than that.
+	{ days: 0, account: "checking", amount: 2_300, type: "deposit", direction: "in", description: "Zelle from Tori Williams" },
 	{ days: 1, account: "checking", amount: 1_290, type: "purchase", direction: "out", description: "Apple Store — MacBook" },
 	{ days: 2, account: "checking", amount: 240.5, type: "purchase", direction: "out", description: "Groceries — Trader Joe's" },
 ]

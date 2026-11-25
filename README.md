@@ -7,7 +7,7 @@ There is no server runtime, no API routes, no database and no real authenticatio
 ## What works
 
 - **Marketing pages** — home, about, careers, security, privacy policy, terms of service.
-- **Sample dashboard** — overview, accounts, transactions (client-side search/filter), cards, statements, security, settings, support, all backed by local demo data for the account holder *Gloria Morgan* (total balance `$2,684,305.72`, 12-month cash-flow chart).
+- **Sample dashboard** — overview, accounts, transactions (client-side search/filter), cards, statements, security, settings, support, all backed by local demo data for the account holder *Gloria Morgan* (total balance `$2,686,193.72`, 12-month cash-flow chart).
 - **Demo sign-in** — the form accepts the sample credentials below and opens `/dashboard`. Anything else shows an authentication error.
 - **Sign up** — goes to the "Getting your account ready" holding page.
 - **Loading states** — the dashboard shows a skeleton for ~900 ms per route, sign-in for ~1.2 s, sign-up for ~1.4 s, so the demo feels like a real application.
