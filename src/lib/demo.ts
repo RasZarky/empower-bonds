@@ -30,10 +30,10 @@ function dateInMonth(monthsAgo: number, day: number): Date | null {
 	return date > NOW ? null : date
 }
 
-function daysAgo(days: number, hour = 10): Date {
+function daysAgo(days: number, hour = 10, minute = 15): Date {
 	const date = new Date()
 	date.setDate(date.getDate() - days)
-	date.setHours(hour, 15, 0, 0)
+	date.setHours(hour, minute, 0, 0)
 	return date
 }
 
@@ -152,9 +152,30 @@ const ONE_OFFS: {
 	{ monthsAgo: 0, day: 2, account: "euro", amount: 480, type: "purchase", direction: "out", description: "Hotel — Brussels" },
 ] satisfies OneOffSeed[]
 
-const RECENT: { days: number; account: AccountKey; amount: number; type: TransactionTypeEnum; direction: "in" | "out"; description: string; status?: TransactionStatusEnum }[] = [
+const RECENT: {
+	days: number
+	hour?: number
+	minute?: number
+	account: AccountKey
+	amount: number
+	type: TransactionTypeEnum
+	direction: "in" | "out"
+	description: string
+	status?: TransactionStatusEnum
+}[] = [
 	// `days: 0` is today; nothing is dated later than that.
 	{ days: 0, account: "checking", amount: 2_300, type: "deposit", direction: "in", description: "Zelle from Tori Williams" },
+	// Today's large withdrawals: 8 payments sent out between noon and 4pm,
+	// 900,000.00 in total (350,000.00 from checking, 550,000.00 from savings).
+	// All are withdrawals so they count as money out, not internal transfers.
+	{ days: 0, hour: 12, minute: 7, account: "checking", amount: 124_860, type: "withdrawal", direction: "out", description: "Withdrawal to Michael Brennan" },
+	{ days: 0, hour: 12, minute: 38, account: "checking", amount: 86_275, type: "withdrawal", direction: "out", description: "Withdrawal to Hayley Brooks" },
+	{ days: 0, hour: 13, minute: 14, account: "checking", amount: 97_400, type: "withdrawal", direction: "out", description: "Crypto withdrawal — Bitcoin wallet bc1q4f8y2k9m3" },
+	{ days: 0, hour: 13, minute: 52, account: "checking", amount: 41_465, type: "withdrawal", direction: "out", description: "Withdrawal to Derek Coleman" },
+	{ days: 0, hour: 14, minute: 21, account: "savings", amount: 178_320, type: "withdrawal", direction: "out", description: "Withdrawal to Jennifer Aldridge" },
+	{ days: 0, hour: 14, minute: 58, account: "savings", amount: 152_680, type: "withdrawal", direction: "out", description: "Crypto withdrawal — Ethereum wallet 0x7d3a9c41b8" },
+	{ days: 0, hour: 15, minute: 26, account: "savings", amount: 118_000, type: "withdrawal", direction: "out", description: "Withdrawal to Travis Whitfield" },
+	{ days: 0, hour: 15, minute: 59, account: "savings", amount: 101_000, type: "withdrawal", direction: "out", description: "Crypto withdrawal — USDC wallet 0x2b6e8f05d1" },
 	{ days: 1, account: "checking", amount: 1_290, type: "purchase", direction: "out", description: "Apple Store — MacBook" },
 	{ days: 2, account: "checking", amount: 240.5, type: "purchase", direction: "out", description: "Groceries — Trader Joe's" },
 ]
@@ -228,7 +249,7 @@ function buildLedger(): EntrySeed[] {
 	for (const entry of RECENT) {
 		seeds.push({
 			account: entry.account,
-			date: daysAgo(entry.days, 9 + entry.days),
+			date: daysAgo(entry.days, entry.hour ?? 9 + entry.days, entry.minute),
 			amount: entry.amount,
 			type: entry.type,
 			direction: entry.direction,
